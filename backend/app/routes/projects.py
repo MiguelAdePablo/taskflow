@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models import Project, ProjectMember, User
+from app import socketio
+from datetime import datetime
 
 # Crear el blueprint para rutas de proyectos
 projects_bp = Blueprint('projects', __name__)
@@ -357,6 +359,34 @@ def add_member(project_id):
         
         db.session.add(new_membership)
         db.session.commit()
+
+        # 🔔 Notificar al nuevo miembro que ha sido añadido
+        try:
+            # Notificación al usuario invitado
+            socketio.emit(
+                'project:member_added',
+                {
+                    'project': new_membership.project.to_dict(),
+                    'member': new_membership.to_dict(),
+                    'invited_by': current_user_id,
+                    'message': f'Has sido añadido al proyecto "{new_membership.project.name}"',
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                room=f'user_{user_id}'  # Solo el usuario invitado
+            )
+            
+            # Notificar a los demás miembros del proyecto
+            socketio.emit(
+                'project:member_joined',
+                {
+                    'project_id': project_id,
+                    'new_member': new_membership.to_dict(),
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                room=f'project_{project_id}'
+            )
+        except Exception as ws_error:
+            print(f"⚠️ No se pudo emitir evento WebSocket: {ws_error}")
         
         return jsonify({
             'message': 'Miembro añadido exitosamente',
@@ -414,6 +444,33 @@ def remove_member(project_id, user_id):
         # Eliminar la membresía
         db.session.delete(membership)
         db.session.commit()
+
+        # 🔔 Notificar al usuario expulsado y a los miembros restantes
+        try:
+            # Notificación al usuario expulsado
+            socketio.emit(
+                'project:member_removed',
+                {
+                    'project_id': project_id,
+                    'message': f'Has sido eliminado del proyecto "{project.name}"',
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                room=f'user_{user_id}'
+            )
+            
+            # Notificar a los miembros restantes
+            socketio.emit(
+                'project:member_left',
+                {
+                    'project_id': project_id,
+                    'user_id': user_id,
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                room=f'project_{project_id}'
+            )
+        except Exception as ws_error:
+            print(f"⚠️ No se pudo emitir evento WebSocket: {ws_error}")
+
         
         return jsonify({'message': 'Miembro eliminado exitosamente'}), 200
         

@@ -3,6 +3,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 from app import db
 from app.models import Task, Project, ProjectMember, User
+from app import socketio  
+from datetime import datetime
 
 # Crear el blueprint para rutas de tareas
 tasks_bp = Blueprint('tasks', __name__)
@@ -151,6 +153,35 @@ def create_task(project_id):
         
         db.session.add(new_task)
         db.session.commit()
+
+        # 🔔 EMITIR EVENTO: Nueva tarea creada
+# 🔔 EMITIR EVENTO a la sala del proyecto (solo miembros lo reciben)
+        try:
+            socketio.emit(
+                'task:created',
+                {
+                    'task': new_task.to_dict(),
+                    'project_id': project_id,
+                    'created_by': current_user_id,  # Para que el frontend filtre al emisor
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                room=f'project_{project_id}'  # ← Solo miembros del proyecto
+            )
+            
+            # Notificación individual al usuario asignado (si es diferente al creador)
+            if assigned_to and assigned_to != current_user_id:
+                socketio.emit(
+                    'task:assigned',
+                    {
+                        'task': new_task.to_dict(),
+                        'project_id': project_id,
+                        'message': f'Se te ha asignado una nueva tarea: {new_task.title}',
+                        'timestamp': datetime.utcnow().isoformat()
+                    },
+                    room=f'user_{assigned_to}'  # ← Solo el usuario asignado
+                )
+        except Exception as ws_error:
+            print(f"⚠️ No se pudo emitir evento WebSocket: {ws_error}")
         
         return jsonify({
             'message': 'Tarea creada exitosamente',
@@ -282,6 +313,20 @@ def update_task(task_id):
                 task.assigned_to = assigned_to
         
         db.session.commit()
+        # 🔔 EMITIR EVENTO a la sala del proyecto
+        try:
+            socketio.emit(
+                'task:updated',
+                {
+                    'task': task.to_dict(),
+                    'project_id': task.project_id,
+                    'updated_by': current_user_id,
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                room=f'project_{task.project_id}'
+            )
+        except Exception as ws_error:
+            print(f"⚠️ No se pudo emitir evento WebSocket: {ws_error}")
         
         return jsonify({
             'message': 'Tarea actualizada exitosamente',

@@ -38,15 +38,20 @@ def create_app(config_class=Config):
     from .routes.projects import projects_bp
     from .routes.tasks import tasks_bp
     from .routes.users import users_bp
+    from .routes.comments import comments_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(projects_bp, url_prefix='/api/projects')
     app.register_blueprint(tasks_bp, url_prefix='/api')
     app.register_blueprint(users_bp, url_prefix='/api/users')
+    app.register_blueprint(comments_bp, url_prefix='/api')
     
     # Ruta de prueba para verificar que el servidor funciona
     @app.route('/api/health')
     def health_check():
         return {'status': 'ok', 'message': 'TaskFlow API is running!'}
+    
+    # Importar los handlers de WebSocket (DEBE IR AQUÍ, después de registrar blueprints)
+    from . import socket_handlers  
     
     return app
