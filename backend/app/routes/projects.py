@@ -13,7 +13,7 @@ projects_bp = Blueprint('projects', __name__)
 # ENDPOINT 1: LISTAR MIS PROYECTOS
 # GET /api/projects
 # ============================================================
-@projects_bp.route('/', methods=['GET'])
+@projects_bp.route('', methods=['GET'])
 @jwt_required()
 def get_my_projects():
     """
@@ -60,24 +60,9 @@ def get_my_projects():
 # ENDPOINT 2: CREAR PROYECTO
 # POST /api/projects
 # ============================================================
-@projects_bp.route('/', methods=['POST'])
+@projects_bp.route('', methods=['POST'])
 @jwt_required()
 def create_project():
-    """
-    Crea un nuevo proyecto. El usuario actual se convierte en el owner.
-    
-    Request body (JSON):
-    {
-        "name": "Proyecto Web",
-        "description": "Desarrollo de sitio web corporativo"
-    }
-    
-    Response (201):
-    {
-        "message": "Proyecto creado exitosamente",
-        "project": { ... }
-    }
-    """
     try:
         current_user_id = int(get_jwt_identity())
         data = request.get_json()
@@ -85,8 +70,10 @@ def create_project():
         if not data:
             return jsonify({'error': 'No se proporcionaron datos'}), 400
         
-        name = data.get('name', '').strip()
-        description = data.get('description', '').strip()
+        # ✅ CORRECCIÓN: Usar "or ''" para convertir None en cadena vacía antes de hacer .strip()
+        name = (data.get('name') or '').strip()
+        description_raw = data.get('description')
+        description = (description_raw or '').strip() or None  # Si queda vacío, lo guarda como NULL en la BD
         
         if not name:
             return jsonify({'error': 'El nombre del proyecto es obligatorio'}), 400
@@ -94,7 +81,7 @@ def create_project():
         # Crear el proyecto
         new_project = Project(
             name=name,
-            description=description or None,
+            description=description,
             owner_id=current_user_id
         )
         
@@ -110,6 +97,21 @@ def create_project():
         
         db.session.add(owner_membership)
         db.session.commit()
+        
+        # 🔔 EMITIR EVENTO (Si lo tenías añadido de la Fase 2)
+        try:
+            from app import socketio
+            from datetime import datetime
+            socketio.emit(
+                'project:created',
+                {
+                    'project': new_project.to_dict(),
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                room=f'user_{current_user_id}'
+            )
+        except Exception:
+            pass # Ignorar errores de websocket en esta prueba
         
         return jsonify({
             'message': 'Proyecto creado exitosamente',

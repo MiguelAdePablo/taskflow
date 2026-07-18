@@ -28,7 +28,7 @@ def create_app(config_class=Config):
     
     # Configurar CORS para permitir peticiones desde React
     # En desarrollo, permitimos el puerto 5173 de Vite
-    CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
     
     # Inicializar SocketIO con CORS
     socketio.init_app(app, cors_allowed_origins="http://localhost:5173")

@@ -1,26 +1,106 @@
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import projectService from '../services/projectService'
+import ProjectCard from '../components/ProjectCard'
+import CreateProjectModal from '../components/CreateProjectModal'
 
 /**
- * Dashboard principal.
- * Muestra información del usuario autenticado.
+ * ============================================================
+ * PÁGINA: Dashboard
+ * ============================================================
+ * 
+ * Página principal después del login.
+ * Muestra:
+ * - Saludo personalizado al usuario
+ * - Estadísticas básicas
+ * - Lista de proyectos del usuario
+ * - Botón para crear nuevo proyecto
+ * 
+ * Estados que maneja:
+ * - projects: Lista de proyectos
+ * - loading: Si está cargando los datos
+ * - error: Si hubo un error al cargar
+ * - isModalOpen: Si el modal de crear proyecto está abierto
  */
 function Dashboard() {
+  // Obtener datos del usuario autenticado
   const { user, logout } = useAuth()
   
+  // Estados de la página
+  const [projects, setProjects] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  
+  /**
+   * useEffect: Se ejecuta cuando el componente se monta
+   * Carga los proyectos del usuario desde la API
+   * 
+   * El array vacío [] al final significa que solo se ejecuta una vez
+   */
+  useEffect(() => {
+    loadProjects()
+  }, [])
+  
+  /**
+   * Función para cargar los proyectos
+   * Separada en una función para poder reutilizarla
+   */
+  const loadProjects = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const projectsData = await projectService.getMyProjects()
+      setProjects(projectsData)
+    } catch (error) {
+      console.error('Error cargando proyectos:', error)
+      setError('No se pudieron cargar los proyectos. Intenta de nuevo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  /**
+   * Función que se ejecuta cuando se crea un proyecto nuevo
+   * Lo añade a la lista sin tener que recargar todo
+   */
+  const handleProjectCreated = (newProject) => {
+    setProjects([newProject, ...projects])
+  }
+  
   return (
-    <div style={{ padding: '2rem' }}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+    <div style={{ 
+      minHeight: '100vh',
+      backgroundColor: '#f8f9fa'
+    }}>
+      {/* Header con saludo y botón de logout */}
+      <header style={{
+        backgroundColor: 'white',
+        borderBottom: '1px solid #e0e0e0',
+        padding: '1rem 2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '2rem'
+        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
       }}>
-        <h1>🏠 Dashboard</h1>
         <div>
-          <span style={{ marginRight: '1rem' }}>
-            👋 Hola, <strong>{user?.full_name || user?.username}</strong>
-          </span>
+          <h1 style={{ margin: 0, color: '#212529' }}>
+            🏠 TaskFlow
+          </h1>
+          <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.9rem' }}>
+            Gestión colaborativa de tareas
+          </p>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontWeight: '500', color: '#212529' }}>
+              👋 Hola, {user?.full_name || user?.username}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>
+              {user?.email}
+            </div>
+          </div>
           <button
             onClick={logout}
             style={{
@@ -29,24 +109,194 @@ function Dashboard() {
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize: '0.9rem'
             }}
           >
             Cerrar sesión
           </button>
         </div>
+      </header>
+      
+      {/* Contenido principal */}
+      <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+        
+        {/* Sección de estadísticas */}
+        <section style={{ marginBottom: '2rem' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '1rem'
+          }}>
+            <StatCard 
+              icon="📁" 
+              label="Proyectos" 
+              value={projects.length} 
+              color="#007bff"
+            />
+            <StatCard 
+              icon="✅" 
+              label="Total de miembros" 
+              value={projects.reduce((sum, p) => sum + p.member_count, 0)}
+              color="#28a745"
+            />
+            <StatCard 
+              icon="👤" 
+              label="Tu rol principal" 
+              value="Owner" 
+              color="#6f42c1"
+            />
+          </div>
+        </section>
+        
+        {/* Sección de proyectos */}
+        <section>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1.5rem'
+          }}>
+            <h2 style={{ margin: 0, color: '#212529' }}>
+              📋 Mis Proyectos
+            </h2>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <span>➕</span> Nuevo Proyecto
+            </button>
+          </div>
+          
+          {/* Estados de carga, error y vacío */}
+          {loading && (
+            <div style={{
+              textAlign: 'center',
+              padding: '3rem',
+              color: '#6c757d'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+              <p>Cargando tus proyectos...</p>
+            </div>
+          )}
+          
+          {error && !loading && (
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: '#f8d7da',
+              color: '#721c24',
+              borderRadius: '8px',
+              textAlign: 'center',
+              border: '1px solid #f5c6cb'
+            }}>
+              <p style={{ margin: '0 0 1rem 0' }}>❌ {error}</p>
+              <button
+                onClick={loadProjects}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                🔄 Reintentar
+              </button>
+            </div>
+          )}
+          
+          {!loading && !error && projects.length === 0 && (
+            <div style={{
+              textAlign: 'center',
+              padding: '3rem',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              border: '2px dashed #ced4da'
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎯</div>
+              <h3 style={{ color: '#212529', marginBottom: '0.5rem' }}>
+                Aún no tienes proyectos
+              </h3>
+              <p style={{ color: '#6c757d', marginBottom: '1.5rem' }}>
+                Crea tu primer proyecto para empezar a organizar tus tareas
+              </p>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '1rem'
+                }}
+              >
+                ✨ Crear mi primer proyecto
+              </button>
+            </div>
+          )}
+          
+          {/* Grid de proyectos */}
+          {!loading && !error && projects.length > 0 && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '1.5rem'
+            }}>
+              {projects.map(project => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+      
+      {/* Modal para crear proyecto */}
+      <CreateProjectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onProjectCreated={handleProjectCreated}
+      />
+    </div>
+  )
+}
+
+/**
+ * Componente auxiliar para mostrar estadísticas
+ * Es un "mini-componente" dentro del mismo archivo
+ * porque solo se usa aquí
+ */
+function StatCard({ icon, label, value, color }) {
+  return (
+    <div style={{
+      backgroundColor: 'white',
+      padding: '1.5rem',
+      borderRadius: '8px',
+      border: '1px solid #e0e0e0',
+      borderLeft: `4px solid ${color}`,
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+    }}>
+      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{icon}</div>
+      <div style={{ fontSize: '2rem', fontWeight: '700', color: color }}>
+        {value}
       </div>
-      
-      <p>Bienvenido a TaskFlow</p>
-      
-      <hr />
-      
-      <h2>🔗 Enlaces de prueba (temporales)</h2>
-      <nav style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-        <Link to="/projects/1">Ver Proyecto 1</Link>
-        <Link to="/projects/2">Ver Proyecto 2</Link>
-        <Link to="/tasks/5">Ver Tarea 5</Link>
-      </nav>
+      <div style={{ color: '#6c757d', fontSize: '0.9rem' }}>
+        {label}
+      </div>
     </div>
   )
 }
