@@ -11,7 +11,7 @@ users_bp = Blueprint('users', __name__)
 # ENDPOINT 1: BUSCAR USUARIOS
 # GET /api/users?q=termino_busqueda
 # ============================================================
-@users_bp.route('/', methods=['GET'])
+@users_bp.route('', methods=['GET'])
 @jwt_required()  # Requiere autenticación
 def search_users():
     """
