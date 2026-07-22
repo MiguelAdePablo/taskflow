@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import authService from '../services/authService'
+import { useState, useEffect } from 'react'  // ← Verificar esta línea
 
 /**
  * ============================================================

@@ -7,6 +7,8 @@ import MemberCard from '../components/MemberCard'
 import AddMemberModal from '../components/AddMemberModal'
 import TaskItem from '../components/TaskItem'
 import CreateTaskModal from '../components/CreateTaskModal'
+import EditProjectModal from '../components/EditProjectModal'
+import EditTaskModal from '../components/EditTaskModal'
 
 function ProjectDetail() {
   const { id } = useParams()
@@ -18,8 +20,14 @@ function ProjectDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   
+  // Estados de modales existentes
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false)
+  
+  // ✅ NUEVOS: Estados para modales de edición
+  const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false)
+  const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false)
+  const [taskToEdit, setTaskToEdit] = useState(null)
   
   const [filters, setFilters] = useState({
     status: '',
@@ -92,6 +100,21 @@ function ProjectDetail() {
     setTasks([newTask, ...tasks])
   }
 
+  // ✅ NUEVAS: Funciones para edición
+  const handleProjectUpdated = async () => {
+    // Recargamos los datos completos del proyecto
+    await loadProjectData();
+  }
+
+  const handleTaskUpdated = (updatedTask) => {
+    setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t))
+  }
+
+  const handleEditTask = (task) => {
+    setTaskToEdit(task)
+    setIsEditTaskModalOpen(true)
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.5rem', color: '#6c757d' }}>
@@ -121,13 +144,7 @@ function ProjectDetail() {
     )
   }
 
-  // ✅ Lógica de permisos robusta
   const isOwner = project && user && project.owner_id === user.id
-  
-  // Debug en consola para que veas exactamente qué está pasando
-  console.log("🔍 [DEBUG ProjectDetail] Usuario actual ID:", user?.id)
-  console.log("🔍 [DEBUG ProjectDetail] Owner del proyecto ID:", project?.owner_id)
-  console.log("🔍 [DEBUG ProjectDetail] ¿Es owner?:", isOwner)
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
@@ -141,33 +158,68 @@ function ProjectDetail() {
       
       <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
         <section style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid #e0e0e0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ flex: 1, minWidth: '250px' }}>
               <h1 style={{ margin: '0 0 0.5rem 0', color: '#212529' }}>📁 {project.name}</h1>
               <p style={{ margin: 0, color: '#6c757d' }}>{project.description || 'Sin descripción'}</p>
             </div>
-            {isOwner && (
-              <span style={{ padding: '0.5rem 1rem', backgroundColor: '#f3e8ff', color: '#6f42c1', borderRadius: '4px', fontSize: '0.9rem', fontWeight: '500' }}>
-                👑 Eres el owner
+            
+            {/* ✅ MODIFICADO: Badge de owner + botón de editar proyecto */}
+            {isOwner ? (
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#f3e8ff',
+                  color: '#6f42c1',
+                  borderRadius: '4px',
+                  fontSize: '0.9rem',
+                  fontWeight: '500'
+                }}>
+                  👑 Eres el owner
+                </span>
+                <button
+                  onClick={() => setIsEditProjectModalOpen(true)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'white',
+                    color: '#007bff',
+                    border: '1px solid #007bff',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: '500'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#007bff'
+                    e.currentTarget.style.color = 'white'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'white'
+                    e.currentTarget.style.color = '#007bff'
+                  }}
+                >
+                  ✏️ Editar
+                </button>
+              </div>
+            ) : (
+              <span style={{ fontSize: '0.8rem', color: '#6c757d', fontStyle: 'italic' }}>
+                (Solo el owner puede editar)
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '2rem', paddingTop: '1rem', borderTop: '1px solid #f0f0f0', fontSize: '0.9rem', color: '#6c757d' }}>
+          
+          <div style={{ display: 'flex', gap: '2rem', paddingTop: '1rem', borderTop: '1px solid #f0f0f0', fontSize: '0.9rem', color: '#6c757d', flexWrap: 'wrap' }}>
             <span>👥 {project.member_count || project.members?.length || 0} miembros</span>
-            <span>📅 Creado: {project.created_at ? new Date(project.created_at).toLocaleDateString('es-ES') : 'Fecha desconocida'}</span>
+            <span> Creado: {project.created_at ? new Date(project.created_at).toLocaleDateString('es-ES') : 'Fecha desconocida'}</span>
           </div>
         </section>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
-          
-          {/* Columna izquierda: Miembros */}
           <section>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-                👥 Miembros ({project.members?.length || 0})
+                 Miembros ({project.members?.length || 0})
               </h2>
-              
-              {/* ✅ AQUÍ ESTÁ EL CAMBIO: Si es owner muestra el botón, si no, muestra un mensaje explicativo */}
               {isOwner ? (
                 <button
                   onClick={() => setIsAddMemberModalOpen(true)}
@@ -193,7 +245,6 @@ function ProjectDetail() {
             </div>
           </section>
           
-          {/* Columna derecha: Tareas */}
           <section>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
@@ -252,13 +303,21 @@ function ProjectDetail() {
                   <p>Crea la primera tarea de este proyecto</p>
                 </div>
               ) : (
-                tasks.map(task => <TaskItem key={task.id} task={task} />)
+                /* ✅ MODIFICADO: TaskItem con prop onEdit */
+                tasks.map(task => (
+                  <TaskItem 
+                    key={task.id} 
+                    task={task} 
+                    onEdit={handleEditTask}
+                  />
+                ))
               )}
             </div>
           </section>
         </div>
       </main>
       
+      {/* Modales existentes */}
       <AddMemberModal
         isOpen={isAddMemberModalOpen}
         onClose={() => setIsAddMemberModalOpen(false)}
@@ -273,6 +332,25 @@ function ProjectDetail() {
         projectId={parseInt(id)}
         members={project.members || []}
         onTaskCreated={handleTaskCreated}
+      />
+      
+      {/* ✅ NUEVOS: Modales de edición */}
+      <EditProjectModal
+        isOpen={isEditProjectModalOpen}
+        onClose={() => setIsEditProjectModalOpen(false)}
+        project={project}
+        onProjectUpdated={handleProjectUpdated}
+      />
+      
+      <EditTaskModal
+        isOpen={isEditTaskModalOpen}
+        onClose={() => {
+          setIsEditTaskModalOpen(false)
+          setTaskToEdit(null)
+        }}
+        task={taskToEdit}
+        members={project.members || []}
+        onTaskUpdated={handleTaskUpdated}
       />
     </div>
   )

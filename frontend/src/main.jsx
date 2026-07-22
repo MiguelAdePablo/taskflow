@@ -1,25 +1,24 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'  // ← NUEVA IMPORTACIÓN
+import { AuthProvider } from './context/AuthContext'
+import { SocketProvider } from './context/SocketContext'
 import App from './App.jsx'
 import './index.css'
 
-/**
- * Orden de los providers:
- * 1. BrowserRouter (más externo) - para que todo tenga acceso al router
- * 2. AuthProvider - para que todo tenga acceso al estado de autenticación
- * 3. App - nuestra aplicación
- * 
- * ¿Por qué este orden?
- * Porque los providers de React funcionan como capas de una cebolla.
- * El más externo envuelve a todos los demás.
- */
+// ✅ ORDEN CORRECTO:
+// 1. BrowserRouter (siempre primero)
+// 2. AuthProvider (provee el token)
+// 3. SocketProvider (consume el token de AuthProvider)
+// 4. App (usa ambos contextos)
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <SocketProvider>
+          <App />
+        </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

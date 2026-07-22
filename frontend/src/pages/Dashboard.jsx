@@ -1,51 +1,26 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import projectService from '../services/projectService'
 import ProjectCard from '../components/ProjectCard'
 import CreateProjectModal from '../components/CreateProjectModal'
+import EditProfileModal from '../components/EditProfileModal'
 
-/**
- * ============================================================
- * PÁGINA: Dashboard
- * ============================================================
- * 
- * Página principal después del login.
- * Muestra:
- * - Saludo personalizado al usuario
- * - Estadísticas básicas
- * - Lista de proyectos del usuario
- * - Botón para crear nuevo proyecto
- * 
- * Estados que maneja:
- * - projects: Lista de proyectos
- * - loading: Si está cargando los datos
- * - error: Si hubo un error al cargar
- * - isModalOpen: Si el modal de crear proyecto está abierto
- */
 function Dashboard() {
-  // Obtener datos del usuario autenticado
   const { user, logout } = useAuth()
   
-  // Estados de la página
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   
-  /**
-   * useEffect: Se ejecuta cuando el componente se monta
-   * Carga los proyectos del usuario desde la API
-   * 
-   * El array vacío [] al final significa que solo se ejecuta una vez
-   */
+  // ✅ NUEVO: Estado para modal de edición de perfil
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false)
+  
   useEffect(() => {
     loadProjects()
   }, [])
-  
-  /**
-   * Función para cargar los proyectos
-   * Separada en una función para poder reutilizarla
-   */
+
   const loadProjects = async () => {
     try {
       setLoading(true)
@@ -59,21 +34,24 @@ function Dashboard() {
       setLoading(false)
     }
   }
-  
-  /**
-   * Función que se ejecuta cuando se crea un proyecto nuevo
-   * Lo añade a la lista sin tener que recargar todo
-   */
+
   const handleProjectCreated = (newProject) => {
     setProjects([newProject, ...projects])
   }
-  
+
+  // ✅ NUEVO: Callback para cuando se actualiza el perfil
+  const handleProfileUpdated = (updatedUser) => {
+    // La actualización del contexto se maneja en EditProfileModal
+    // Aquí solo recargamos para reflejar los cambios
+    window.location.reload()
+  }
+
   return (
     <div style={{ 
       minHeight: '100vh',
       backgroundColor: '#f8f9fa'
     }}>
-      {/* Header con saludo y botón de logout */}
+      {/* ✅ MODIFICADO: Header con botón de editar perfil */}
       <header style={{
         backgroundColor: 'white',
         borderBottom: '1px solid #e0e0e0',
@@ -81,7 +59,9 @@ function Dashboard() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+        flexWrap: 'wrap',
+        gap: '1rem'
       }}>
         <div>
           <h1 style={{ margin: 0, color: '#212529' }}>
@@ -92,7 +72,7 @@ function Dashboard() {
           </p>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontWeight: '500', color: '#212529' }}>
               👋 Hola, {user?.full_name || user?.username}
@@ -101,6 +81,32 @@ function Dashboard() {
               {user?.email}
             </div>
           </div>
+          
+          {/* ✅ NUEVO: Botón para editar perfil */}
+          <button
+            onClick={() => setIsEditProfileModalOpen(true)}
+            style={{
+              padding: '0.4rem 0.8rem',
+              backgroundColor: 'white',
+              color: '#007bff',
+              border: '1px solid #007bff',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: '500'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#007bff'
+              e.currentTarget.style.color = 'white'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'white'
+              e.currentTarget.style.color = '#007bff'
+            }}
+          >
+            ✏️ Editar Perfil
+          </button>
+          
           <button
             onClick={logout}
             style={{
@@ -118,10 +124,7 @@ function Dashboard() {
         </div>
       </header>
       
-      {/* Contenido principal */}
       <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-        
-        {/* Sección de estadísticas */}
         <section style={{ marginBottom: '2rem' }}>
           <div style={{
             display: 'grid',
@@ -137,7 +140,7 @@ function Dashboard() {
             <StatCard 
               icon="✅" 
               label="Total de miembros" 
-              value={projects.reduce((sum, p) => sum + p.member_count, 0)}
+              value={projects.reduce((sum, p) => sum + (p.member_count || 0), 0)}
               color="#28a745"
             />
             <StatCard 
@@ -149,13 +152,14 @@ function Dashboard() {
           </div>
         </section>
         
-        {/* Sección de proyectos */}
         <section>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '1.5rem'
+            marginBottom: '1.5rem',
+            flexWrap: 'wrap',
+            gap: '1rem'
           }}>
             <h2 style={{ margin: 0, color: '#212529' }}>
               📋 Mis Proyectos
@@ -180,7 +184,6 @@ function Dashboard() {
             </button>
           </div>
           
-          {/* Estados de carga, error y vacío */}
           {loading && (
             <div style={{
               textAlign: 'center',
@@ -213,7 +216,7 @@ function Dashboard() {
                   cursor: 'pointer'
                 }}
               >
-                🔄 Reintentar
+                 Reintentar
               </button>
             </div>
           )}
@@ -250,7 +253,6 @@ function Dashboard() {
             </div>
           )}
           
-          {/* Grid de proyectos */}
           {!loading && !error && projects.length > 0 && (
             <div style={{
               display: 'grid',
@@ -265,21 +267,22 @@ function Dashboard() {
         </section>
       </main>
       
-      {/* Modal para crear proyecto */}
       <CreateProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onProjectCreated={handleProjectCreated}
       />
+      
+      {/* ✅ NUEVO: Modal de edición de perfil */}
+      <EditProfileModal
+        isOpen={isEditProfileModalOpen}
+        onClose={() => setIsEditProfileModalOpen(false)}
+        onProfileUpdated={handleProfileUpdated}
+      />
     </div>
   )
 }
 
-/**
- * Componente auxiliar para mostrar estadísticas
- * Es un "mini-componente" dentro del mismo archivo
- * porque solo se usa aquí
- */
 function StatCard({ icon, label, value, color }) {
   return (
     <div style={{

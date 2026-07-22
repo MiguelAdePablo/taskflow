@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'  // ← AÑADIDO: useEffect
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
@@ -19,10 +19,11 @@ function Login() {
   const navigate = useNavigate()
   
   // Si ya está autenticado, redirigir al dashboard
-  if (isAuthenticated) {
-    navigate('/dashboard', { replace: true })
-    return null
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
   
   /**
    * Manejador del submit del formulario

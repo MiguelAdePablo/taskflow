@@ -61,8 +61,9 @@ class Project(db.Model):
     tasks = db.relationship('Task', backref='project', lazy=True, 
                            cascade='all, delete-orphan')
     
-    def to_dict(self):
-        return {
+    # ✅ MODIFICADO: Añadido parámetro include_members
+    def to_dict(self, include_members=False):
+        data = {
             'id': self.id,
             'name': self.name,
             'description': self.description,
@@ -70,6 +71,12 @@ class Project(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'member_count': len(self.members)
         }
+        
+        # Si se solicita, incluimos la lista completa de miembros
+        if include_members:
+            data['members'] = [member.to_dict() for member in self.members]
+            
+        return data
 
 class ProjectMember(db.Model):
     """Tabla intermedia para la relación muchos-a-muchos entre usuarios y proyectos"""

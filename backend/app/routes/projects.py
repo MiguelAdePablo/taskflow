@@ -243,7 +243,7 @@ def update_project(project_id):
         
         return jsonify({
             'message': 'Proyecto actualizado exitosamente',
-            'project': project.to_dict()
+            'project': project.to_dict(include_members=True)
         }), 200
         
     except Exception as e:
