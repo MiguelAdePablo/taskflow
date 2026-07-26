@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useSocket } from '../hooks/useSocket' 
 import projectService from '../services/projectService'
 import taskService from '../services/taskService'
 import MemberCard from '../components/MemberCard'
@@ -8,12 +9,16 @@ import AddMemberModal from '../components/AddMemberModal'
 import TaskItem from '../components/TaskItem'
 import CreateTaskModal from '../components/CreateTaskModal'
 import EditProjectModal from '../components/EditProjectModal'
-import EditTaskModal from '../components/EditTaskModal'
+import EditTaskModal from '../components/EditTaskModal' 
+import NotificationBell from '../components/NotificationBell'
 
 function ProjectDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  
+  // ✅ MODIFICADO: Añadimos 'socket' para poder escuchar los eventos
+  const { socket, joinProject, leaveProject } = useSocket() 
   
   const [project, setProject] = useState(null)
   const [tasks, setTasks] = useState([])
@@ -44,6 +49,54 @@ function ProjectDetail() {
       loadTasks()
     }
   }, [project, filters])
+
+  // ✅ 1. Unirse a la sala del proyecto para recibir notificaciones
+  useEffect(() => {
+    if (project) {
+      joinProject(project.id)
+    }
+    return () => {
+      if (project) {
+        leaveProject(project.id)
+      }
+    }
+  }, [project, joinProject, leaveProject])
+
+  // ✅ MEJORADO: Escuchar eventos en tiempo real de forma segura
+  useEffect(() => {
+    if (!socket || !project) return
+
+    // Definimos las funciones fuera para poder referenciarlas en el cleanup
+    const handleTaskCreated = (data) => {
+      console.log('📥 [Socket] Evento recibido: task:created', data)
+      if (data.project_id === project.id) {
+        setTasks(prevTasks => {
+          // Evitar duplicados si el evento llega dos veces
+          if (prevTasks.some(t => t.id === data.task.id)) return prevTasks
+          return [data.task, ...prevTasks]
+        })
+      }
+    }
+
+    const handleTaskUpdated = (data) => {
+      console.log('📥 [Socket] Evento recibido: task:updated', data)
+      if (data.project_id === project.id) {
+        setTasks(prevTasks => 
+          prevTasks.map(t => t.id === data.task.id ? data.task : t)
+        )
+      }
+    }
+
+    // Registramos los listeners
+    socket.on('task:created', handleTaskCreated)
+    socket.on('task:updated', handleTaskUpdated)
+
+    // Limpieza: eliminamos SOLO estos listeners específicos
+    return () => {
+      socket.off('task:created', handleTaskCreated)
+      socket.off('task:updated', handleTaskUpdated)
+    }
+  }, [socket, project])
 
   const loadProjectData = async () => {
     try {
@@ -102,8 +155,7 @@ function ProjectDetail() {
 
   // ✅ NUEVAS: Funciones para edición
   const handleProjectUpdated = async () => {
-    // Recargamos los datos completos del proyecto
-    await loadProjectData();
+    await loadProjectData()
   }
 
   const handleTaskUpdated = (updatedTask) => {
@@ -149,6 +201,16 @@ function ProjectDetail() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
       <header style={{ backgroundColor: 'white', borderBottom: '1px solid #e0e0e0', padding: '1rem 2rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Link to="/dashboard" style={{ color: '#007bff', textDecoration: 'none' }}>
+            ← Volver al Dashboard
+          </Link>
+          <NotificationBell /> {/* ✅ AÑADIDO AQUÍ */}
+        </div>
+      </header>
+      
+      
+      <header style={{ backgroundColor: 'white', borderBottom: '1px solid #e0e0e0', padding: '1rem 2rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <Link to="/dashboard" style={{ color: '#007bff', textDecoration: 'none' }}>
             ← Volver al Dashboard
@@ -164,7 +226,6 @@ function ProjectDetail() {
               <p style={{ margin: 0, color: '#6c757d' }}>{project.description || 'Sin descripción'}</p>
             </div>
             
-            {/* ✅ MODIFICADO: Badge de owner + botón de editar proyecto */}
             {isOwner ? (
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <span style={{
@@ -210,7 +271,7 @@ function ProjectDetail() {
           
           <div style={{ display: 'flex', gap: '2rem', paddingTop: '1rem', borderTop: '1px solid #f0f0f0', fontSize: '0.9rem', color: '#6c757d', flexWrap: 'wrap' }}>
             <span>👥 {project.member_count || project.members?.length || 0} miembros</span>
-            <span> Creado: {project.created_at ? new Date(project.created_at).toLocaleDateString('es-ES') : 'Fecha desconocida'}</span>
+            <span>📅 Creado: {project.created_at ? new Date(project.created_at).toLocaleDateString('es-ES') : 'Fecha desconocida'}</span>
           </div>
         </section>
         
@@ -218,7 +279,7 @@ function ProjectDetail() {
           <section>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-                 Miembros ({project.members?.length || 0})
+                 👥 Miembros ({project.members?.length || 0})
               </h2>
               {isOwner ? (
                 <button
@@ -303,7 +364,6 @@ function ProjectDetail() {
                   <p>Crea la primera tarea de este proyecto</p>
                 </div>
               ) : (
-                /* ✅ MODIFICADO: TaskItem con prop onEdit */
                 tasks.map(task => (
                   <TaskItem 
                     key={task.id} 

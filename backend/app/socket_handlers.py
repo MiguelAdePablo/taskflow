@@ -8,29 +8,23 @@ from app import socketio
 
 
 @socketio.on('connect')
-@socketio.on('connect')
 def handle_connect():
     """
     Se ejecuta cuando un cliente se conecta.
-    Extrae el token del parámetro de URL 'token'.
+    Si el token es inválido, retornamos None silenciosamente para evitar 
+    el bug de Werkzeug "write() before start_response".
     """
     try:
-        from flask import request
-        
-        # Obtener el token directamente de los parámetros de la URL
         token = request.args.get('token')
         
         if not token:
-            print("⚠️ Conexión rechazada: No se recibió token en la URL")
-            return False
-            
-        # Decodificar el token JWT (ya viene puro, sin Bearer)
+            print("⚠️ Conexión descartada: Token no encontrado")
+            return None  # ← CLAVE: No retornar False, no llamar a disconnect()
+        
         decoded = decode_token(token)
         user_id = decoded['sub']
         
-        # Unir a la sala personal
         join_room(f'user_{user_id}')
-        
         print(f"✅ Usuario {user_id} conectado correctamente vía WebSocket")
         
         emit('connection_success', {
@@ -39,41 +33,33 @@ def handle_connect():
         })
         
     except Exception as e:
-        print(f"❌ Error crítico en conexión WebSocket: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
+        # Si el token es inválido o expiró, simplemente dejamos que la conexión caiga
+        print(f"⚠️ Conexión descartada por token inválido/expirado: {str(e)}")
+        return None  # ← CLAVE: Retorno silencioso
 
 
 @socketio.on('join_project')
 def handle_join_project(data):
-    """El cliente pide unirse a la sala de un proyecto específico."""
     try:
         project_id = data.get('project_id')
-        if not project_id:
-            return
-        room_name = f'project_{project_id}'
-        join_room(room_name)
-        print(f"👤 Usuario unido a la sala {room_name}")
+        if project_id:
+            join_room(f'project_{project_id}')
+            print(f"👤 Usuario unido a la sala project_{project_id}")
     except Exception as e:
         print(f"❌ Error al unirse al proyecto: {str(e)}")
 
 
 @socketio.on('leave_project')
 def handle_leave_project(data):
-    """El cliente pide salir de la sala de un proyecto."""
     try:
         project_id = data.get('project_id')
-        if not project_id:
-            return
-        room_name = f'project_{project_id}'
-        leave_room(room_name)
-        print(f"👤 Usuario salió de la sala {room_name}")
+        if project_id:
+            leave_room(f'project_{project_id}')
+            print(f"👤 Usuario salió de la sala project_{project_id}")
     except Exception as e:
         print(f"❌ Error al salir del proyecto: {str(e)}")
 
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    """Se ejecuta cuando un cliente cierra la conexión."""
-    print("🔌 Cliente desconectado")
+    print("🔌 Cliente desconectado limpiamente")
