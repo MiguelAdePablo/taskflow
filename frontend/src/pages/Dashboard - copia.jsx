@@ -46,6 +46,7 @@ function Dashboard() {
       <header style={{ 
         backgroundColor: 'var(--bg-secondary)', 
         borderBottom: '1px solid var(--border-color)', 
+        padding: '1rem 2rem', 
         boxShadow: 'var(--shadow)',
         width: '100%'
       }}>
@@ -53,12 +54,10 @@ function Dashboard() {
         <div style={{ 
           width: '100%',
           maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '1rem 2rem',  // ← MOVIDO AQUÍ el padding
           display: 'flex', 
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxSizing: 'border-box'  // ← IMPORTANTE: incluye padding en el ancho
+          margin: '0 auto'
         }}>
           {/* COLUMNA IZQUIERDA: Logo */}
           <div>
@@ -86,51 +85,43 @@ function Dashboard() {
                 {user?.email}
               </div>
             </div>
-            
-            {/* ✅ NUEVO: Contenedor vertical para los botones */}
-              <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '0.5rem'
-              }}>
-                <button 
-                  onClick={() => setIsEditProfileModalOpen(true)} 
-                  style={{ 
-                    padding: '0.4rem 0.8rem', 
-                    backgroundColor: 'transparent', 
-                    color: 'var(--accent-blue)', 
-                    border: '1px solid var(--accent-blue)', 
-                    borderRadius: '4px', 
-                    cursor: 'pointer', 
-                    fontSize: '0.85rem', 
-                    fontWeight: '500',
-                    transition: 'all 0.2s'
-                  }} 
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-blue)'; e.currentTarget.style.color = 'white' }} 
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--accent-blue)' }}
-                >
-                  ✏️ Editar Perfil
-                </button>
 
-                <button 
-                  onClick={handleLogout} 
-                  style={{ 
-                    padding: '0.5rem 1rem', 
-                    backgroundColor: 'var(--accent-red)', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '4px', 
-                    cursor: 'pointer', 
-                    fontSize: '0.9rem',
-                    transition: 'opacity 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                >
-                  Cerrar sesión
-                </button>
+              <button 
+              onClick={() => setIsEditProfileModalOpen(true)} 
+              style={{ 
+                padding: '0.4rem 0.8rem', 
+                backgroundColor: 'transparent', 
+                color: 'var(--accent-blue)', 
+                border: '1px solid var(--accent-blue)', 
+                borderRadius: '4px', 
+                cursor: 'pointer', 
+                fontSize: '0.85rem', 
+                fontWeight: '500',
+                transition: 'all 0.2s'
+              }} 
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-blue)'; e.currentTarget.style.color = 'white' }} 
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--accent-blue)' }}
+            >
+              ✏️ Editar Perfil
+            </button>
 
-              </div>
+            <button 
+              onClick={handleLogout} 
+              style={{ 
+                padding: '0.5rem 1rem', 
+                backgroundColor: 'var(--accent-red)', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px', 
+                cursor: 'pointer', 
+                fontSize: '0.9rem',
+                transition: 'opacity 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              Cerrar sesión
+            </button>
 
             {/* Columna vertical de iconos */}
             <div style={{ 

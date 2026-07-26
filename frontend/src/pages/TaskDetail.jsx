@@ -5,7 +5,7 @@ import { useSocket } from '../hooks/useSocket'
 import taskService from '../services/taskService'
 import commentService from '../services/commentService'
 import CommentItem from '../components/CommentItem'
-import NotificationBell from '../components/NotificationBell' // ✅ AÑADIDO
+import NotificationBell from '../components/NotificationBell'
 
 function TaskDetail() {
   const { id } = useParams()
@@ -40,7 +40,6 @@ function TaskDetail() {
     const handleTaskCommented = (data) => {
       if (data.task_id === parseInt(id)) {
         setComments(prevComments => {
-          // ✅ VERIFICACIÓN ROBUSTA DE DUPLICADOS: Si ya existe ese ID, no lo añade
           if (prevComments.some(c => c.id === data.comment.id)) return prevComments
           return [...prevComments, data.comment]
         })
@@ -60,9 +59,7 @@ function TaskDetail() {
     } catch (error) {
       console.error('Error cargando tarea:', error)
       setError(error.message || 'No se pudo cargar la tarea')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   const handleDeleteTask = async () => {
@@ -70,9 +67,7 @@ function TaskDetail() {
     try {
       await taskService.deleteTask(id)
       navigate(`/projects/${task.project.id}`)
-    } catch (error) {
-      alert('Error al eliminar la tarea: ' + error.message)
-    }
+    } catch (error) { alert('Error al eliminar la tarea: ' + error.message) }
   }
 
   const handleStatusChange = async (newStatus) => {
@@ -80,12 +75,8 @@ function TaskDetail() {
     try {
       setUpdatingStatus(true)
       await taskService.updateTask(id, { status: newStatus })
-      // No necesitamos setTask aquí, el evento WebSocket 'task:updated' lo hará por nosotros en tiempo real
-    } catch (error) {
-      alert('Error al actualizar el estado: ' + error.message)
-    } finally {
-      setUpdatingStatus(false)
-    }
+    } catch (error) { alert('Error al actualizar el estado: ' + error.message) }
+    finally { setUpdatingStatus(false) }
   }
 
   const handlePriorityChange = async (newPriority) => {
@@ -93,34 +84,23 @@ function TaskDetail() {
     try {
       setUpdatingStatus(true)
       await taskService.updateTask(id, { priority: newPriority })
-      // El evento WebSocket 'task:updated' actualizará la UI
-    } catch (error) {
-      alert('Error al actualizar la prioridad: ' + error.message)
-    } finally {
-      setUpdatingStatus(false)
-    }
+    } catch (error) { alert('Error al actualizar la prioridad: ' + error.message) }
+    finally { setUpdatingStatus(false) }
   }
 
   const handleAddComment = async (e) => {
     e.preventDefault()
     if (!newComment.trim()) return
-    
     try {
       setSubmittingComment(true)
       const createdComment = await commentService.createComment(id, newComment)
-      
-      // ✅ ACTUALIZACIÓN OPTIMISTA: Se muestra al instante. 
-      // El listener de WebSocket lo ignorará gracias a la verificación de duplicados por ID.
       setComments(prev => {
         if (prev.some(c => c.id === createdComment.id)) return prev
         return [...prev, createdComment]
       })
       setNewComment('')
-    } catch (error) {
-      alert('Error al añadir comentario: ' + error.message)
-    } finally {
-      setSubmittingComment(false)
-    }
+    } catch (error) { alert('Error al añadir comentario: ' + error.message) }
+    finally { setSubmittingComment(false) }
   }
 
   const handleCommentDeleted = (commentId) => {
@@ -146,78 +126,87 @@ function TaskDetail() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
+      {/* ✅ HEADER RESPONSIVO */}
       <header style={{ backgroundColor: 'white', borderBottom: '1px solid #e0e0e0', padding: '1rem 2rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-        {/* ✅ HEADER MEJORADO: Espacio entre el enlace y la campana */}
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="container-narrow header-flex">
           <Link to={task.project ? `/projects/${task.project.id}` : '/dashboard'} style={{ color: '#007bff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
             ← Volver a {task.project ? task.project.name : 'Proyectos'}
           </Link>
-          <NotificationBell /> {/* ✅ CAMPANA VISIBLE AQUÍ */}
+          <NotificationBell />
         </div>
       </header>
       
-      <main style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
-        <section style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid #e0e0e0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <h1 style={{ margin: 0, color: '#212529', fontSize: '1.75rem', flex: 1 }}>{task.title}</h1>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-              <span style={{ padding: '0.4rem 0.8rem', backgroundColor: statusInfo.bg, color: statusInfo.color, borderRadius: '16px', fontSize: '0.9rem', fontWeight: '600' }}>{statusInfo.label}</span>
-              <span style={{ padding: '0.4rem 0.8rem', backgroundColor: '#f8f9fa', color: priorityInfo.color, borderRadius: '16px', fontSize: '0.9rem', fontWeight: '600', border: `1px solid ${priorityInfo.color}` }}>{priorityInfo.label}</span>
-              <button onClick={handleDeleteTask} style={{ padding: '0.4rem 0.8rem', backgroundColor: '#fff', color: '#dc3545', border: '1px solid #dc3545', borderRadius: '16px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', marginLeft: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#dc3545'; e.currentTarget.style.color = 'white' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; e.currentTarget.style.color = '#dc3545' }}>
-                🗑️ Eliminar
-              </button>
+      <main style={{ padding: '2rem' }}>
+        <div className="container-narrow">
+          <section style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid #e0e0e0' }}>
+            {/* Título y badges */}
+            <div className="header-flex" style={{ marginBottom: '1.5rem', alignItems: 'flex-start' }}>
+              <h1 style={{ margin: 0, color: '#212529', fontSize: '1.75rem', flex: 1 }}>{task.title}</h1>
+              <div className="header-flex-right" style={{ alignItems: 'center' }}>
+                <span style={{ padding: '0.4rem 0.8rem', backgroundColor: statusInfo.bg, color: statusInfo.color, borderRadius: '16px', fontSize: '0.9rem', fontWeight: '600' }}>{statusInfo.label}</span>
+                <span style={{ padding: '0.4rem 0.8rem', backgroundColor: '#f8f9fa', color: priorityInfo.color, borderRadius: '16px', fontSize: '0.9rem', fontWeight: '600', border: `1px solid ${priorityInfo.color}` }}>{priorityInfo.label}</span>
+                <button onClick={handleDeleteTask} style={{ padding: '0.4rem 0.8rem', backgroundColor: '#fff', color: '#dc3545', border: '1px solid #dc3545', borderRadius: '16px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#dc3545'; e.currentTarget.style.color = 'white' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; e.currentTarget.style.color = '#dc3545' }}>
+                  🗑️ Eliminar
+                </button>
+              </div>
             </div>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-            <div><div style={{ fontSize: '0.85rem', color: '#6c757d', marginBottom: '0.25rem' }}>👤 Asignado a</div><div style={{ fontWeight: '500', color: '#212529' }}>{task.assigned_user ? (task.assigned_user.full_name || task.assigned_user.username) : 'Sin asignar'}</div></div>
-            <div><div style={{ fontSize: '0.85rem', color: '#6c757d', marginBottom: '0.25rem' }}>📅 Fecha límite</div><div style={{ fontWeight: '500', color: '#212529' }}>{task.due_date ? new Date(task.due_date).toLocaleDateString('es-ES') : 'Sin fecha'}</div></div>
-            <div><div style={{ fontSize: '0.85rem', color: '#6c757d', marginBottom: '0.25rem' }}>🏢 Proyecto</div><div style={{ fontWeight: '500', color: '#212529' }}>{task.project?.name || 'Desconocido'}</div></div>
-          </div>
+            
+            {/* Metadatos */}
+            <div className="grid-auto-fit" style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+              <div><div style={{ fontSize: '0.85rem', color: '#6c757d', marginBottom: '0.25rem' }}>👤 Asignado a</div><div style={{ fontWeight: '500', color: '#212529' }}>{task.assigned_user ? (task.assigned_user.full_name || task.assigned_user.username) : 'Sin asignar'}</div></div>
+              <div><div style={{ fontSize: '0.85rem', color: '#6c757d', marginBottom: '0.25rem' }}>📅 Fecha límite</div><div style={{ fontWeight: '500', color: '#212529' }}>{task.due_date ? new Date(task.due_date).toLocaleDateString('es-ES') : 'Sin fecha'}</div></div>
+              <div><div style={{ fontSize: '0.85rem', color: '#6c757d', marginBottom: '0.25rem' }}>🏢 Proyecto</div><div style={{ fontWeight: '500', color: '#212529' }}>{task.project?.name || 'Desconocido'}</div></div>
+            </div>
 
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#495057', marginBottom: '0.35rem' }}>Estado:</label>
-              <select value={task.status} onChange={(e) => handleStatusChange(e.target.value)} disabled={updatingStatus} style={{ padding: '0.4rem 0.75rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem', backgroundColor: '#f8f9fa', color: '#212529', cursor: updatingStatus ? 'not-allowed' : 'pointer', minWidth: '150px' }}>
-                <option value="pending">⏳ Pendiente</option>
-                <option value="in_progress">🔄 En progreso</option>
-                <option value="completed">✅ Completada</option>
-              </select>
+            {/* Selectores de estado y prioridad */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#495057', marginBottom: '0.35rem' }}>Estado:</label>
+                <select value={task.status} onChange={(e) => handleStatusChange(e.target.value)} disabled={updatingStatus} style={{ padding: '0.4rem 0.75rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem', backgroundColor: '#f8f9fa', color: '#212529', cursor: updatingStatus ? 'not-allowed' : 'pointer', minWidth: '150px' }}>
+                  <option value="pending">⏳ Pendiente</option>
+                  <option value="in_progress">🔄 En progreso</option>
+                  <option value="completed">✅ Completada</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#495057', marginBottom: '0.35rem' }}>Prioridad:</label>
+                <select value={task.priority} onChange={(e) => handlePriorityChange(e.target.value)} disabled={updatingStatus} style={{ padding: '0.4rem 0.75rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem', backgroundColor: '#f8f9fa', color: '#212529', cursor: updatingStatus ? 'not-allowed' : 'pointer', minWidth: '150px' }}>
+                  <option value="low">🟢 Baja</option>
+                  <option value="medium">🟡 Media</option>
+                  <option value="high">🔴 Alta</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#495057', marginBottom: '0.35rem' }}>Prioridad:</label>
-              <select value={task.priority} onChange={(e) => handlePriorityChange(e.target.value)} disabled={updatingStatus} style={{ padding: '0.4rem 0.75rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem', backgroundColor: '#f8f9fa', color: '#212529', cursor: updatingStatus ? 'not-allowed' : 'pointer', minWidth: '150px' }}>
-                <option value="low">🟢 Baja</option>
-                <option value="medium">🟡 Media</option>
-                <option value="high">🔴 Alta</option>
-              </select>
-            </div>
-          </div>
-          
-          {task.description && (
-            <div><h3 style={{ fontSize: '1.1rem', color: '#212529', marginBottom: '0.75rem' }}>📝 Descripción</h3><p style={{ color: '#495057', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{task.description}</p></div>
-          )}
-        </section>
-        
-        <section style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-          <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', color: '#212529' }}>💬 Comentarios ({comments.length})</h2>
-          <div style={{ marginBottom: '1.5rem', maxHeight: '400px', overflowY: 'auto' }}>
-            {comments.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#6c757d', backgroundColor: '#f8f9fa', borderRadius: '8px' }}><p style={{ margin: 0 }}>Aún no hay comentarios. ¡Sé el primero en opinar!</p></div>
-            ) : (
-              comments.map(comment => <CommentItem key={comment.id} comment={comment} onCommentDeleted={handleCommentDeleted} />)
+            
+            {task.description && (
+              <div>
+                <h3 style={{ fontSize: '1.1rem', color: '#212529', marginBottom: '0.75rem' }}> Descripción</h3>
+                <p style={{ color: '#495057', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{task.description}</p>
+              </div>
             )}
-          </div>
-          <form onSubmit={handleAddComment}>
-            <label htmlFor="new-comment" style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#495057', marginBottom: '0.5rem' }}>Añadir un comentario:</label>
-            <textarea id="new-comment" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Escribe tu comentario aquí..." disabled={submittingComment} rows={3} style={{ width: '100%', padding: '0.75rem', border: '1px solid #ced4da', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '0.75rem' }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" disabled={!newComment.trim() || submittingComment} style={{ padding: '0.6rem 1.25rem', backgroundColor: (!newComment.trim() || submittingComment) ? '#6c757d' : '#007bff', color: 'white', border: 'none', borderRadius: '6px', cursor: (!newComment.trim() || submittingComment) ? 'not-allowed' : 'pointer', fontSize: '0.95rem', fontWeight: '500' }}>
-                {submittingComment ? 'Enviando...' : 'Enviar Comentario'}
-              </button>
+          </section>
+          
+          {/* Comentarios */}
+          <section style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+            <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', color: '#212529' }}>💬 Comentarios ({comments.length})</h2>
+            <div style={{ marginBottom: '1.5rem', maxHeight: '400px', overflowY: 'auto' }}>
+              {comments.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#6c757d', backgroundColor: '#f8f9fa', borderRadius: '8px' }}><p style={{ margin: 0 }}>Aún no hay comentarios. ¡Sé el primero en opinar!</p></div>
+              ) : (
+                comments.map(comment => <CommentItem key={comment.id} comment={comment} onCommentDeleted={handleCommentDeleted} />)
+              )}
             </div>
-          </form>
-        </section>
+            <form onSubmit={handleAddComment}>
+              <label htmlFor="new-comment" style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: '#495057', marginBottom: '0.5rem' }}>Añadir un comentario:</label>
+              <textarea id="new-comment" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Escribe tu comentario aquí..." disabled={submittingComment} rows={3} style={{ width: '100%', padding: '0.75rem', border: '1px solid #ced4da', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '0.75rem' }} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button type="submit" disabled={!newComment.trim() || submittingComment} style={{ padding: '0.6rem 1.25rem', backgroundColor: (!newComment.trim() || submittingComment) ? '#6c757d' : '#007bff', color: 'white', border: 'none', borderRadius: '6px', cursor: (!newComment.trim() || submittingComment) ? 'not-allowed' : 'pointer', fontSize: '0.95rem', fontWeight: '500' }}>
+                  {submittingComment ? 'Enviando...' : 'Enviar Comentario'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       </main>
     </div>
   )
