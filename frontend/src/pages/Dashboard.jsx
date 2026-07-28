@@ -136,8 +136,8 @@ function Dashboard() {
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: '0.4rem', 
-              alignItems: 'center' 
+              gap: '0rem', 
+              alignItems: 'center',
             }}>
               <NotificationBell />
               <ThemeToggle />

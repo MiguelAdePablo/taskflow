@@ -10,9 +10,9 @@ function ThemeToggle() {
       style={{
         padding: '0.35rem',
         backgroundColor: 'transparent',
-        border: '1px solid var(--border-color)',
+        border: '0px solid var(--border-color)',
         cursor: 'pointer',
-        fontSize: '1rem',
+        fontSize: '1.5rem',
         borderRadius: '4px',
         transition: 'all 0.2s',
         display: 'flex',
@@ -30,7 +30,7 @@ function ThemeToggle() {
         e.currentTarget.style.transform = 'scale(1)'
       }}
     >
-      {theme === 'light' ? '🌙' : '☀️'}
+      {theme === 'light' ? '☀️' : '🌙'}
     </button>
   )
 }
