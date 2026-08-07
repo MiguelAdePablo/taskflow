@@ -8,12 +8,6 @@ import projectService from '../services/projectService'
  * 
  * Modal para editar un proyecto existente.
  * Solo el owner puede usar este modal.
- * 
- * Props:
- * - isOpen: Booleano que indica si el modal está visible
- * - onClose: Función para cerrar el modal
- * - project: Objeto con los datos actuales del proyecto
- * - onProjectUpdated: Función callback para actualizar la lista en el padre
  */
 function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
   const [formData, setFormData] = useState({
@@ -23,7 +17,6 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Cargar los datos actuales del proyecto cuando se abre el modal
   useEffect(() => {
     if (isOpen && project) {
       setFormData({
@@ -49,7 +42,6 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
     setError('')
     setLoading(true)
 
-    // Validaciones
     if (!formData.name.trim()) {
       setError('El nombre del proyecto es obligatorio')
       setLoading(false)
@@ -64,11 +56,9 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
 
     try {
       const updatedProject = await projectService.updateProject(project.id, formData)
-      
       if (onProjectUpdated) {
         onProjectUpdated(updatedProject)
       }
-      
       onClose()
     } catch (error) {
       setError(error.message)
@@ -84,31 +74,35 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
 
   return (
     <div 
-      onClick={handleClose}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 999,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
+      onClick={handleClose} 
+      data-theme={document.documentElement.getAttribute('data-theme')}
+      style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+        zIndex: 999, 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center' 
       }}
     >
+      {/* ✅ DIV INTERIOR: Ahora usa variables CSS para el tema */}
       <div 
         onClick={(e) => e.stopPropagation()}
         style={{
-          backgroundColor: 'white',
+          backgroundColor: 'var(--bg-secondary)',       // ← CAMBIO: Fondo adaptable
           borderRadius: '8px',
           padding: '2rem',
           width: '100%',
           maxWidth: '500px',
           maxHeight: '90vh',
           overflowY: 'auto',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+          boxShadow: 'var(--shadow-lg)',                // ← CAMBIO: Sombra adaptable
+          border: '1px solid var(--border-color)',      // ← CAMBIO: Borde adaptable
+          color: 'var(--text-primary)'                  // ← CAMBIO: Texto adaptable
         }}
       >
         {/* Header */}
@@ -118,7 +112,7 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
           alignItems: 'center',
           marginBottom: '1.5rem'
         }}>
-          <h2 style={{ margin: 0, color: '#212529' }}>
+          <h2 style={{ margin: 0, color: 'var(--text-primary)' }}> {/* ← CAMBIO */}
             ✏️ Editar Proyecto
           </h2>
           <button
@@ -128,7 +122,7 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
               border: 'none',
               fontSize: '1.5rem',
               cursor: 'pointer',
-              color: '#6c757d'
+              color: 'var(--text-secondary)'            // ← CAMBIO
             }}
           >
             ×
@@ -150,7 +144,7 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
         
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem', color: 'var(--text-primary)' }}> {/* ← CAMBIO */}
               Nombre del proyecto *
             </label>
             <input
@@ -164,17 +158,19 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
               style={{
                 width: '100%',
                 padding: '0.6rem',
-                border: '1px solid #ced4da',
+                border: '1px solid var(--input-border)',  // ← CAMBIO
                 borderRadius: '4px',
                 fontSize: '0.95rem',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                backgroundColor: 'var(--input-bg)',       // ← CAMBIO
+                color: 'var(--text-primary)'              // ← CAMBIO
               }}
               autoFocus
             />
           </div>
           
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem', color: 'var(--text-primary)' }}> {/* ← CAMBIO */}
               Descripción (opcional)
             </label>
             <textarea
@@ -187,12 +183,14 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
               style={{
                 width: '100%',
                 padding: '0.6rem',
-                border: '1px solid #ced4da',
+                border: '1px solid var(--input-border)',  // ← CAMBIO
                 borderRadius: '4px',
                 fontSize: '0.95rem',
                 resize: 'vertical',
                 fontFamily: 'inherit',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                backgroundColor: 'var(--input-bg)',       // ← CAMBIO
+                color: 'var(--text-primary)'              // ← CAMBIO
               }}
             />
           </div>
@@ -204,9 +202,9 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
               disabled={loading}
               style={{
                 padding: '0.6rem 1.25rem',
-                backgroundColor: 'white',
-                color: '#6c757d',
-                border: '1px solid #ced4da',
+                backgroundColor: 'var(--bg-tertiary)',    // ← CAMBIO
+                color: 'var(--text-secondary)',           // ← CAMBIO
+                border: '1px solid var(--border-color)',  // ← CAMBIO
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontSize: '0.9rem'
@@ -219,7 +217,7 @@ function EditProjectModal({ isOpen, onClose, project, onProjectUpdated }) {
               disabled={loading}
               style={{
                 padding: '0.6rem 1.25rem',
-                backgroundColor: loading ? '#6c757d' : '#007bff',
+                backgroundColor: loading ? 'var(--text-muted)' : 'var(--accent-blue)', // ← CAMBIO
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',

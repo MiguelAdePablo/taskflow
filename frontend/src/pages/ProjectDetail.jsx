@@ -11,6 +11,7 @@ import CreateTaskModal from '../components/CreateTaskModal'
 import EditProjectModal from '../components/EditProjectModal'
 import EditTaskModal from '../components/EditTaskModal'
 import NotificationBell from '../components/NotificationBell'
+import ThemeToggle from '../components/ThemeToggle'
 
 function ProjectDetail() {
   const { id } = useParams()
@@ -96,55 +97,93 @@ function ProjectDetail() {
   const handleTaskUpdated = (updatedTask) => { setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t)) }
   const handleEditTask = (task) => { setTaskToEdit(task); setIsEditTaskModalOpen(true) }
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.5rem', color: '#6c757d' }}>⏳ Cargando proyecto...</div>
-  if (error) return <div style={{ padding: '2rem', textAlign: 'center' }}><h2>❌ Error</h2><p>{error}</p><button onClick={() => navigate('/dashboard')} style={{ padding: '0.75rem 1.5rem', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Volver</button></div>
-  if (!project) return <div style={{ padding: '2rem', textAlign: 'center' }}><h2>Proyecto no encontrado</h2><Link to="/dashboard">Volver</Link></div>
+  const handleDeleteProject = async () => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este proyecto? Esta acción no se puede deshacer y eliminará todas las tareas y comentarios asociados.')) {
+      return
+    }
+    
+    const projectName = project.name
+    const userInput = window.prompt(`Para confirmar, escribe el nombre exacto del proyecto: "${projectName}"`)
+    
+    if (userInput !== projectName) {
+      alert('El nombre no coincide. La operación fue cancelada.')
+      return
+    }
+    
+    try {
+      await projectService.deleteProject(id)
+      navigate('/dashboard')
+    } catch (error) {
+      alert('Error al eliminar el proyecto: ' + error.message)
+    }
+  }
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.5rem', color: 'var(--text-secondary)' }}>⏳ Cargando proyecto...</div>
+  if (error) return <div style={{ padding: '2rem', textAlign: 'center' }}><h2 style={{ color: 'var(--text-primary)' }}>❌ Error</h2><p style={{ color: 'var(--text-secondary)' }}>{error}</p><button onClick={() => navigate('/dashboard')} style={{ padding: '0.75rem 1.5rem', backgroundColor: 'var(--accent-blue)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Volver</button></div>
+  if (!project) return <div style={{ padding: '2rem', textAlign: 'center' }}><h2 style={{ color: 'var(--text-primary)' }}>Proyecto no encontrado</h2><Link to="/dashboard" style={{ color: 'var(--accent-blue)' }}>Volver</Link></div>
 
   const isOwner = project && user && project.owner_id === user.id
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-      {/* ✅ HEADER CON CLASE RESPONSIVA */}
-      <header style={{ backgroundColor: 'white', borderBottom: '1px solid #e0e0e0', padding: '1rem 2rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-        <div className="container header-flex">
-          <Link to="/dashboard" style={{ color: '#007bff', textDecoration: 'none' }}>← Volver al Dashboard</Link>
-          <NotificationBell />
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+      <header style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', boxShadow: 'var(--shadow)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
+          <Link to="/dashboard" style={{ color: 'var(--accent-blue)', textDecoration: 'none' }}>← Volver al Dashboard</Link>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center' }}>
+            <NotificationBell />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
       
       <main style={{ padding: '2rem' }}>
         <div className="container-narrow">
-          {/* Tarjeta de Información del Proyecto */}
-          <section style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid #e0e0e0' }}>
-            <div className="header-flex" style={{ marginBottom: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1 }}>
-                <h1 style={{ margin: '0 0 0.5rem 0', color: '#212529' }}>📁 {project.name}</h1>
-                <p style={{ margin: 0, color: '#6c757d' }}>{project.description || 'Sin descripción'}</p>
+          
+          <section style={{ backgroundColor: 'var(--bg-secondary)', padding: '2rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid var(--border-color)' }}>
+            
+            {/* ✅ CONTENEDOR FLEX: Izquierda (Título + Descripción) | Derecha (Botones) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
+              
+              {/* Columna Izquierda: Título y Descripción agrupados */}
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <h1 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '1.75rem' }}>
+                  📁 {project.name}
+                </h1>
+                <p>
+                <br></br>
+                </p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                  {project.description || 'Sin descripción'}
+                </p>
               </div>
+              
+              {/* Columna Derecha: Botones en vertical */}
               {isOwner ? (
-                <div className="header-flex-right">
-                  <span style={{ padding: '0.5rem 1rem', backgroundColor: '#f3e8ff', color: '#6f42c1', borderRadius: '4px', fontSize: '0.9rem', fontWeight: '500' }}>👑 Owner</span>
-                  <button onClick={() => setIsEditProjectModalOpen(true)} style={{ padding: '0.5rem 1rem', backgroundColor: 'white', color: '#007bff', border: '1px solid #007bff', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>✏️ Editar</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}>
+                  <span style={{ padding: '0.4rem 0.8rem', backgroundColor: '#f3e8ff', color: '#6f42c1', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '500' }}>👑 Owner</span>
+                  <button onClick={() => setIsEditProjectModalOpen(true)} style={{ padding: '0.4rem 0.8rem', backgroundColor: 'transparent', color: 'var(--accent-blue)', border: '1px solid var(--accent-blue)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>✏️ Editar</button>
+                  <button onClick={handleDeleteProject} style={{ padding: '0.4rem 0.8rem', backgroundColor: 'transparent', color: 'var(--accent-red)', border: '1px solid var(--accent-red)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-red)'; e.currentTarget.style.color = 'white' }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--accent-red)' }}>🗑️ Eliminar</button>
                 </div>
               ) : (
-                <span style={{ fontSize: '0.8rem', color: '#6c757d', fontStyle: 'italic' }}>(Solo el owner puede editar)</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'right' }}>(Solo el owner puede editar o eliminar)</span>
               )}
             </div>
-            <div style={{ display: 'flex', gap: '2rem', paddingTop: '1rem', borderTop: '1px solid #f0f0f0', fontSize: '0.9rem', color: '#6c757d', flexWrap: 'wrap' }}>
+            
+            {/* Stats abajo */}
+            <div style={{ display: 'flex', gap: '2rem', paddingTop: '1rem', marginTop: '1rem', borderTop: '1px solid var(--border-light)', fontSize: '0.9rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
               <span>👥 {project.member_count || project.members?.length || 0} miembros</span>
               <span>📅 Creado: {project.created_at ? new Date(project.created_at).toLocaleDateString('es-ES') : 'Fecha desconocida'}</span>
             </div>
-          </section>
+            
+          </section>   
           
-          {/* ✅ GRID RESPONSIVO: 2 columnas en PC, 1 en móvil */}
           <div className="grid-2-cols">
-            {/* Columna Izquierda: Miembros */}
             <section>
-              <div className="header-flex" style={{ marginBottom: '1rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.25rem' }}> Miembros ({project.members?.length || 0})</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>👥 Miembros ({project.members?.length || 0})</h2>
                 {isOwner ? (
-                  <button onClick={() => setIsAddMemberModalOpen(true)} style={{ padding: '0.5rem 1rem', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>+ Añadir</button>
-                ) : <span style={{ fontSize: '0.8rem', color: '#6c757d' }}>(Solo owner)</span>}
+                  <button onClick={() => setIsAddMemberModalOpen(true)} style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--accent-green)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>+ Añadir</button>
+                ) : <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>(Solo owner)</span>}
               </div>
               <div>
                 {project.members?.map(member => (
@@ -153,20 +192,17 @@ function ProjectDetail() {
               </div>
             </section>
             
-            {/* Columna Derecha: Tareas */}
             <section>
-              <div className="header-flex" style={{ marginBottom: '1rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.25rem' }}>✅ Tareas ({tasks.length})</h2>
-                <button onClick={() => setIsCreateTaskModalOpen(true)} style={{ padding: '0.5rem 1rem', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>+ Nueva Tarea</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>✅ Tareas ({tasks.length})</h2>
+                <button onClick={() => setIsCreateTaskModalOpen(true)} style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--accent-blue)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>+ Nueva Tarea</button>
               </div>
               
-              {/* Filtros */}
-              <div style={{ backgroundColor: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #e0e0e0' }}>
-                {/* ✅ FILTROS RESPONSIVOS */}
+              <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border-color)' }}>
                 <div className="filters-row">
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: '#495057' }}>Estado</label>
-                    <select name="status" value={filters.status} onChange={handleFilterChange} style={{ width: '100%', padding: '0.5rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Estado</label>
+                    <select name="status" value={filters.status} onChange={handleFilterChange} style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--input-border)', borderRadius: '4px', fontSize: '0.9rem', backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }}>
                       <option value="">Todos</option>
                       <option value="pending">Pendiente</option>
                       <option value="in_progress">En progreso</option>
@@ -174,8 +210,8 @@ function ProjectDetail() {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: '#495057' }}>Prioridad</label>
-                    <select name="priority" value={filters.priority} onChange={handleFilterChange} style={{ width: '100%', padding: '0.5rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Prioridad</label>
+                    <select name="priority" value={filters.priority} onChange={handleFilterChange} style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--input-border)', borderRadius: '4px', fontSize: '0.9rem', backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }}>
                       <option value="">Todas</option>
                       <option value="low">Baja</option>
                       <option value="medium">Media</option>
@@ -183,21 +219,21 @@ function ProjectDetail() {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: '#495057' }}>Asignado a</label>
-                    <select name="assigned_to" value={filters.assigned_to} onChange={handleFilterChange} style={{ width: '100%', padding: '0.5rem', border: '1px solid #ced4da', borderRadius: '4px', fontSize: '0.9rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>Asignado a</label>
+                    <select name="assigned_to" value={filters.assigned_to} onChange={handleFilterChange} style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--input-border)', borderRadius: '4px', fontSize: '0.9rem', backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }}>
                       <option value="">Todos</option>
                       {project.members?.map(member => <option key={member.user_id} value={member.user_id}>{member.user?.full_name || member.user?.username}</option>)}
                     </select>
                   </div>
-                  <button onClick={clearFilters} style={{ padding: '0.5rem 1rem', backgroundColor: 'white', color: '#6c757d', border: '1px solid #ced4da', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}> Limpiar</button>
+                  <button onClick={clearFilters} style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>🔄 Limpiar</button>
                 </div>
               </div>
               
               <div>
                 {tasks.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: 'white', borderRadius: '8px', border: '2px dashed #ced4da', color: '#6c757d' }}>
+                  <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '2px dashed var(--border-color)', color: 'var(--text-secondary)' }}>
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
-                    <h3 style={{ color: '#212529', marginBottom: '0.5rem' }}>No hay tareas</h3>
+                    <h3 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No hay tareas</h3>
                     <p>Crea la primera tarea de este proyecto</p>
                   </div>
                 ) : (
@@ -209,7 +245,6 @@ function ProjectDetail() {
         </div>
       </main>
       
-      {/* Modales */}
       <AddMemberModal isOpen={isAddMemberModalOpen} onClose={() => setIsAddMemberModalOpen(false)} projectId={parseInt(id)} existingMemberIds={project.members?.map(m => m.user_id) || []} onMemberAdded={handleMemberAdded} />
       <CreateTaskModal isOpen={isCreateTaskModalOpen} onClose={() => setIsCreateTaskModalOpen(false)} projectId={parseInt(id)} members={project.members || []} onTaskCreated={handleTaskCreated} />
       <EditProjectModal isOpen={isEditProjectModalOpen} onClose={() => setIsEditProjectModalOpen(false)} project={project} onProjectUpdated={handleProjectUpdated} />

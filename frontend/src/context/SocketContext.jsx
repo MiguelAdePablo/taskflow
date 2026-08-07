@@ -59,7 +59,6 @@ export function SocketProvider({ children }) {
         console.log('👋 Bienvenido, usuario ID:', data.user_id)
       })
       
-      // Listeners de eventos
       newSocket.on('task:created', (data) => {
         console.log('📥 [Socket] Evento recibido: task:created', data)
         handleNewNotification({
@@ -68,38 +67,19 @@ export function SocketProvider({ children }) {
         })
       })
       
-      // ✅ LISTENER MEJORADO: Mensaje dinámico según el campo actualizado
       newSocket.on('task:updated', (data) => {
         console.log('📥 [Socket] Evento recibido: task:updated', data)
-        
         let message = `Tarea "${data.task.title}" fue actualizada`
-        
         if (data.updated_field === 'status') {
-          const statusLabels = { 
-            pending: 'Pendiente', 
-            in_progress: 'En progreso', 
-            completed: 'Completada' 
-          }
-          const label = statusLabels[data.new_value] || data.new_value
-          message = `Tarea "${data.task.title}": Estado ${label}`
-          
+          const labels = { pending: 'Pendiente', in_progress: 'En progreso', completed: 'Completada' }
+          message = `Tarea "${data.task.title}": Estado ${labels[data.new_value] || data.new_value}`
         } else if (data.updated_field === 'priority') {
-          const priorityLabels = { 
-            low: 'Baja', 
-            medium: 'Media', 
-            high: 'Alta' 
-          }
-          const label = priorityLabels[data.new_value] || data.new_value
-          message = `Tarea "${data.task.title}": Prioridad ${label}`
+          const labels = { low: 'Baja', medium: 'Media', high: 'Alta' }
+          message = `Tarea "${data.task.title}": Prioridad ${labels[data.new_value] || data.new_value}`
         }
-
         handleNewNotification({
-          type: 'task:updated', 
-          message: message,
-          projectId: data.project_id, 
-          taskId: data.task.id, 
-          timestamp: data.timestamp, 
-          read: false
+          type: 'task:updated', message,
+          projectId: data.project_id, taskId: data.task.id, timestamp: data.timestamp, read: false
         })
       })
       
@@ -110,31 +90,8 @@ export function SocketProvider({ children }) {
           projectId: data.project_id, taskId: data.task_id, commentId: data.comment.id, timestamp: data.timestamp, read: false
         })
       })
-      
-      newSocket.on('project:member_added', (data) => {
-        handleNewNotification({
-          type: 'project:member_added', message: data.message || 'Has sido añadido a un proyecto',
-          projectId: data.project.id, timestamp: data.timestamp, read: false
-        })
-      })
-      
-      newSocket.on('project:member_removed', (data) => {
-        handleNewNotification({
-          type: 'project:member_removed', message: data.message || 'Has sido eliminado de un proyecto',
-          projectId: data.project_id, timestamp: data.timestamp, read: false
-        })
-      })
-      
-      newSocket.on('task:assigned', (data) => {
-        handleNewNotification({
-          type: 'task:assigned', message: data.message || `Se te ha asignado: ${data.task.title}`,
-          projectId: data.project_id, taskId: data.task.id, timestamp: data.timestamp, read: false
-        })
-      })
 
-      return () => {
-        // Limpieza controlada al desmontar
-      }
+      return () => { /* No desconectamos aquí para permitir reconexiones automáticas */ }
 
     } else if (!isAuthenticated && socketRef.current) {
       console.log('🔌 Usuario no autenticado, desconectando Socket.io...')
@@ -151,19 +108,20 @@ export function SocketProvider({ children }) {
   const removeNotification = useCallback((i) => setNotifications(p => p.filter((_, idx) => idx !== i)), [])
   const clearNotifications = useCallback(() => setNotifications([]), [])
   
+  // ✅ FUNCIONES ESTABLES: Usan socketRef.current, por lo que NUNCA cambian de referencia
   const joinProject = useCallback((pid) => {
-    if (socket && isConnected) { 
-      socket.emit('join_project', { project_id: pid })
+    if (socketRef.current) { 
+      socketRef.current.emit('join_project', { project_id: pid })
       console.log(`📁 Unido a sala project_${pid}`) 
     }
-  }, [socket, isConnected])
+  }, [])
   
   const leaveProject = useCallback((pid) => {
-    if (socket && isConnected) { 
-      socket.emit('leave_project', { project_id: pid })
+    if (socketRef.current) { 
+      socketRef.current.emit('leave_project', { project_id: pid })
       console.log(`🚪 Salido de sala project_${pid}`) 
     }
-  }, [socket, isConnected])
+  }, [])
 
   const disconnectSocket = useCallback(() => {
     if (socketRef.current) {
