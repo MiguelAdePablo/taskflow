@@ -23,34 +23,31 @@ function TaskDetail() {
   const [submittingComment, setSubmittingComment] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
 
-  // Carga inicial
-  useEffect(() => { 
-    loadTaskData() 
-  }, [id])
+  useEffect(() => { loadTaskData() }, [id])
 
-  // Unión a la sala del proyecto basada en primitiva para evitar desincronizaciones
-  const project_id = task?.project?.id
   useEffect(() => {
-    if (project_id) {
-      joinProject(project_id)
+    if (task && task.project && task.project.id) {
+      joinProject(task.project.id)
     }
     return () => {
-      if (project_id) {
-        leaveProject(project_id)
+      if (task && task.project && task.project.id) {
+        leaveProject(task.project.id)
       }
     }
-  }, [project_id, joinProject, leaveProject])
+  }, [task, joinProject, leaveProject])
 
-  // Listeners del Socket
   useEffect(() => {
     if (!socket || !id) return
     
+    // Escuchar actualizaciones de la tarea en tiempo real (de otros usuarios)
     const handleTaskUpdated = (data) => {
       if (data.task.id === parseInt(id)) {
+        console.log('🔄 [Socket] Tarea actualizada en tiempo real:', data.task)
         setTask(data.task)
       }
     }
     
+    // Escuchar nuevos comentarios
     const handleTaskCommented = (data) => {
       if (data.task_id === parseInt(id)) {
         setComments(prevComments => {
@@ -77,10 +74,9 @@ function TaskDetail() {
       const commentsData = await commentService.getTaskComments(id)
       setComments(commentsData)
     } catch (error) {
+      console.error('Error cargando tarea:', error)
       setError(error.message || 'No se pudo cargar la tarea')
-    } finally { 
-      setLoading(false) 
-    }
+    } finally { setLoading(false) }
   }
 
   const handleDeleteTask = async () => {
@@ -88,58 +84,54 @@ function TaskDetail() {
     try {
       await taskService.deleteTask(id)
       navigate(`/projects/${task.project.id}`)
-    } catch (error) { 
-      alert('Error al eliminar la tarea: ' + error.message) 
-    }
+    } catch (error) { alert('Error al eliminar la tarea: ' + error.message) }
   }
 
-  /**
-   * ✅ ACTUALIZACIÓN PASO A PASO (Pesimista - Lineal)
-   * Se ha eliminado la actualización optimista para garantizar 
-   * el orden estricto de ejecución.
-   */
+  // ✅ ACTUALIZACIÓN OPTIMISTA: Paso a paso
   const handleStatusChange = async (newStatus) => {
     if (!task || task.status === newStatus) return
     
+    // PASO 1: Guardar estado anterior (por si hay que revertir)
+    const previousTask = { ...task }
+    
+    // PASO 2: Actualizar UI inmediatamente (notificación visual instantánea)
+    setTask({ ...task, status: newStatus })
+    
+    // PASO 3: Llamar a la API
     try {
-      // Bloqueamos interacciones adicionales
       setUpdatingStatus(true)
-      
-      // PASO 1: El código envía la notificación/cambio al servidor. 
-      // El "await" pausa la ejecución de esta función hasta que la API termine.
       await taskService.updateTask(id, { status: newStatus })
-      
-      // PASO 2: Actualiza la página con el cambio de forma segura,
-      // utilizando el estado anterior (prev) para evitar closures obsoletos.
-      setTask(prev => ({ ...prev, status: newStatus }))
-      
+      // Éxito: la UI ya está actualizada, no necesitamos hacer nada más
+      // El evento WebSocket también llegará, pero será redundante (mismo valor)
     } catch (error) { 
+      // PASO 4 (solo si falla): Revertir al estado anterior
       alert('Error al actualizar el estado: ' + error.message)
+      setTask(previousTask)
     } finally { 
-      // PASO 3: Continua ejecutándose y libera el bloqueo.
       setUpdatingStatus(false) 
     }
   }
 
-  /**
-   * ✅ ACTUALIZACIÓN PASO A PASO (Pesimista - Lineal)
-   */
+  // ✅ ACTUALIZACIÓN OPTIMISTA: Paso a paso
   const handlePriorityChange = async (newPriority) => {
     if (!task || task.priority === newPriority) return
     
+    // PASO 1: Guardar estado anterior
+    const previousTask = { ...task }
+    
+    // PASO 2: Actualizar UI inmediatamente
+    setTask({ ...task, priority: newPriority })
+    
+    // PASO 3: Llamar a la API
     try {
       setUpdatingStatus(true)
-      
-      // PASO 1: Notificación/API
       await taskService.updateTask(id, { priority: newPriority })
-      
-      // PASO 2: Actualizar Pantalla
-      setTask(prev => ({ ...prev, priority: newPriority }))
-      
+      // Éxito: la UI ya está actualizada
     } catch (error) { 
+      // PASO 4 (solo si falla): Revertir
       alert('Error al actualizar la prioridad: ' + error.message)
+      setTask(previousTask)
     } finally { 
-      // PASO 3: Continuar
       setUpdatingStatus(false) 
     }
   }
@@ -155,11 +147,8 @@ function TaskDetail() {
         return [...prev, createdComment]
       })
       setNewComment('')
-    } catch (error) { 
-      alert('Error al añadir comentario: ' + error.message) 
-    } finally { 
-      setSubmittingComment(false) 
-    }
+    } catch (error) { alert('Error al añadir comentario: ' + error.message) }
+    finally { setSubmittingComment(false) }
   }
 
   const handleCommentDeleted = (commentId) => {
@@ -171,7 +160,7 @@ function TaskDetail() {
   if (!task) return <div style={{ padding: '2rem', textAlign: 'center' }}><h2 style={{ color: 'var(--text-primary)' }}>Tarea no encontrada</h2><Link to="/dashboard" style={{ color: 'var(--accent-blue)' }}>Volver al Dashboard</Link></div>
 
   const getStatusBadge = (status) => {
-    const statuses = { pending: { label: '⏳ Pendiente', color: '#6c757d', bg: '#e9ecef' }, in_progress: { label: '🔄 En progreso', color: '#0d6efd', bg: '#cfe2ff' }, completed: { label: '✅ Completada', color: '#198754', bg: '#d1e7dd' } }
+    const statuses = { pending: { label: '⏳ Pendiente', color: '#6c757d', bg: '#e9ecef' }, in_progress: { label: ' En progreso', color: '#0d6efd', bg: '#cfe2ff' }, completed: { label: '✅ Completada', color: '#198754', bg: '#d1e7dd' } }
     return statuses[status] || statuses.pending
   }
 
@@ -185,8 +174,23 @@ function TaskDetail() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-      <header style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', padding: '1rem 2rem', boxShadow: 'var(--shadow)', width: '100%', minHeight: '5rem' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+      
+      <header style={{ 
+        backgroundColor: 'var(--bg-secondary)', 
+        borderBottom: '1px solid var(--border-color)', 
+        padding: '1rem 2rem', 
+        boxShadow: 'var(--shadow)',
+        width: '100%',
+        minHeight: '5rem'
+      }}>
+        <div style={{ 
+          maxWidth: '1000px', 
+          margin: '0 auto', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          width: '100%'
+        }}>
           <Link to={task.project ? `/projects/${task.project.id}` : '/dashboard'} style={{ color: 'var(--accent-blue)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500' }}>
             ← Volver a {task.project ? task.project.name : 'Proyectos'}
           </Link>
@@ -230,7 +234,7 @@ function TaskDetail() {
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Prioridad:</label>
                 <select value={task.priority} onChange={(e) => handlePriorityChange(e.target.value)} disabled={updatingStatus} style={{ padding: '0.4rem 0.75rem', border: '1px solid var(--input-border)', borderRadius: '4px', fontSize: '0.9rem', backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)', cursor: updatingStatus ? 'not-allowed' : 'pointer', minWidth: '150px' }}>
                   <option value="low">🟢 Baja</option>
-                  <option value="medium">🟡 Media</option>
+                  <option value="medium"> Media</option>
                   <option value="high">🔴 Alta</option>
                 </select>
               </div>
@@ -238,7 +242,7 @@ function TaskDetail() {
             
             {task.description && (
               <div>
-                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>📝 Descripción</h3>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}> Descripción</h3>
                 <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{task.description}</p>
               </div>
             )}

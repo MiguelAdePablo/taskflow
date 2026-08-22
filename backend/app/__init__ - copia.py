@@ -1,4 +1,3 @@
-import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -21,18 +20,6 @@ def create_app(config_class=Config):
     """
     app = Flask(__name__)
     app.config.from_object(config_class)
-
-        
-    # ... inicialización de db, migrate, jwt ...
-    
-    # ✅ CORS DINÁMICO: Permite localhost en desarrollo y tu dominio en producción
-    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-    CORS(app, resources={r"/api/*": {"origins": [frontend_url, "http://localhost:5173"]}})
-    
-    # ✅ SOCKET.IO DINÁMICO
-    socketio.init_app(app, cors_allowed_origins=[frontend_url, "http://localhost:5173"])
-    
-    # ... resto de tu código (blueprints, health check, socket_handlers) ...
     
     # Inicializar extensiones con la app
     db.init_app(app)
