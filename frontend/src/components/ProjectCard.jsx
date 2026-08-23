@@ -1,56 +1,38 @@
 import { Link } from 'react-router-dom'
 
-/**
- * ============================================================
- * COMPONENTE: ProjectCard
- * ============================================================
- * 
- * Tarjeta reutilizable que muestra la información básica de un proyecto.
- * 
- * ¿Por qué un componente separado?
- * - Reutilizable: Lo usamos en Dashboard, búsqueda, etc.
- * - Mantenible: Si cambia el diseño, solo modificamos aquí
- * - Testeable: Podemos probarlo de forma aislada
- * 
- * Props que recibe:
- * - project: Objeto con los datos del proyecto
- * 
- * Ejemplo de uso:
- * <ProjectCard project={{ id: 1, name: "Mi Proyecto", ... }} />
- */
+// ============================================================
+// PROPÓSITO: Formatear fecha y determinar color de badge.
+// CRÍTICO: Funciones extraídas fuera del componente para evitar su recreación innecesaria en cada renderizado (optimización de memoria y rendimiento).
+// ============================================================
+const formatDate = (dateString) => {
+  if (!dateString) return 'Fecha desconocida'
+  return new Date(dateString).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
+}
+
+const getMemberBadgeColor = (count) => {
+  if (count === 1) return '#6c757d'
+  if (count <= 3) return '#17a2b8'
+  return '#28a745'
+}
+
+// ============================================================
+// PROPÓSITO: Renderizar tarjeta reutilizable con información básica de un proyecto.
+// CRÍTICO: Se valida la existencia de la prop `project` al inicio para evitar errores de desestructuración (TypeError) si el dato llega nulo desde la API.
+// ============================================================
 function ProjectCard({ project }) {
-  // Validación de seguridad: si no hay proyecto, no renderizar nada
   if (!project) return null
   
-  // Formatear la fecha de creación para mostrarla de forma amigable
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Fecha desconocida'
-    
-    const date = new Date(dateString)
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
-  
-  // Determinar el color del badge según el número de miembros
-  const getMemberBadgeColor = (count) => {
-    if (count === 1) return '#6c757d'  // Gris: solo el owner
-    if (count <= 3) return '#17a2b8'   // Azul: equipo pequeño
-    return '#28a745'                    // Verde: equipo grande
-  }
-  
   return (
-    <Link 
-      to={`/projects/${project.id}`}
-      style={{ textDecoration: 'none', color: 'inherit' }}
-    >
+    <Link to={`/projects/${project.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
       <div style={{
-        border: '1px solid #e0e0e0',
+        border: '1px solid var(--border-color, #e0e0e0)',
         borderRadius: '8px',
         padding: '1.5rem',
-        backgroundColor: 'white',
+        backgroundColor: 'var(--bg-primary, white)',
         transition: 'all 0.2s ease',
         cursor: 'pointer',
         height: '100%',
@@ -61,32 +43,18 @@ function ProjectCard({ project }) {
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-4px)'
         e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)'
-        e.currentTarget.style.borderColor = '#007bff'
+        e.currentTarget.style.borderColor = 'var(--primary-color, #007bff)'
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)'
         e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)'
-        e.currentTarget.style.borderColor = '#e0e0e0'
+        e.currentTarget.style.borderColor = 'var(--border-color, #e0e0e0)'
       }}
       >
-        {/* Header de la tarjeta */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'flex-start',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ 
-            margin: 0, 
-            fontSize: '1.25rem',
-            color: '#212529',
-            flex: 1,
-            marginRight: '1rem'
-          }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary, #212529)', flex: 1, marginRight: '1rem' }}>
             📁 {project.name}
           </h3>
-          
-          {/* Badge con el número de miembros */}
           <span style={{
             backgroundColor: getMemberBadgeColor(project.member_count),
             color: 'white',
@@ -100,14 +68,12 @@ function ProjectCard({ project }) {
           </span>
         </div>
         
-        {/* Descripción */}
         <p style={{
           margin: '0 0 1rem 0',
-          color: '#6c757d',
+          color: 'var(--text-secondary, #6c757d)',
           fontSize: '0.95rem',
           flex: 1,
           lineHeight: '1.5',
-          // Truncar texto largo con ellipsis
           overflow: 'hidden',
           display: '-webkit-box',
           WebkitLineClamp: 3,
@@ -116,18 +82,17 @@ function ProjectCard({ project }) {
           {project.description || 'Sin descripción'}
         </p>
         
-        {/* Footer con fecha */}
         <div style={{
-          borderTop: '1px solid #f0f0f0',
+          borderTop: '1px solid var(--border-color, #f0f0f0)',
           paddingTop: '1rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '0.85rem',
-          color: '#6c757d'
+          color: 'var(--text-secondary, #6c757d)'
         }}>
           <span>📅 Creado: {formatDate(project.created_at)}</span>
-          <span style={{ color: '#007bff', fontWeight: '500' }}>
+          <span style={{ color: 'var(--primary-color, #007bff)', fontWeight: '500' }}>
             Ver detalles →
           </span>
         </div>

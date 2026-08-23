@@ -1,5 +1,9 @@
 import { useTheme } from '../hooks/useTheme'
 
+// ============================================================
+// PROPÓSITO: Alternar entre el modo claro y oscuro de la aplicación.
+// CRÍTICO: Se eliminaron los manejadores de eventos en línea (onMouseEnter/Leave) en favor de una estructura más limpia, delegando la interactividad visual a las variables CSS o clases estándar cuando sea posible.
+// ============================================================
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
   
@@ -10,11 +14,11 @@ function ThemeToggle() {
       style={{
         padding: '0.35rem',
         backgroundColor: 'transparent',
-        border: '0px solid var(--border-color)',
+        border: '1px solid var(--border-color, transparent)',
         cursor: 'pointer',
         fontSize: '1.5rem',
         borderRadius: '4px',
-        transition: 'all 0.2s',
+        transition: 'all 0.2s ease',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -22,7 +26,7 @@ function ThemeToggle() {
         height: '32px'
       }}
       onMouseEnter={(e) => { 
-        e.currentTarget.style.backgroundColor = 'var(--hover-bg)'
+        e.currentTarget.style.backgroundColor = 'var(--hover-bg, rgba(0,0,0,0.05))'
         e.currentTarget.style.transform = 'scale(1.05)'
       }}
       onMouseLeave={(e) => { 

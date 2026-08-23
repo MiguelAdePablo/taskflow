@@ -1,25 +1,11 @@
 import { useState } from 'react'
 import taskService from '../services/taskService'
 
-/**
- * ============================================================
- * COMPONENTE: CreateTaskModal
- * ============================================================
- * 
- * Modal para crear una nueva tarea en un proyecto.
- * 
- * Props:
- * - isOpen: Booleano que indica si el modal está visible
- * - onClose: Función para cerrar el modal
- * - projectId: ID del proyecto
- * - members: Lista de miembros del proyecto (para el selector de asignado)
- * - onTaskCreated: Función que se ejecuta cuando se crea la tarea
- */
+// ============================================================
+// PROPÓSITO: Modal para crear una nueva tarea en un proyecto específico.
+// CRÍTICO: Se corrige la serialización de la fecha. En lugar de `new Date().toISOString()` (que aplica la zona horaria local y puede cambiar el día), se usa `${date}T00:00:00` para garantizar que el backend reciba el día exacto seleccionado por el usuario.
+// ============================================================
 function CreateTaskModal({ isOpen, onClose, projectId, members = [], onTaskCreated }) {
-  
-  // ============================================================
-  // 1. TODOS los Hooks van PRIMERO, sin condiciones.
-  // ============================================================
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -30,92 +16,58 @@ function CreateTaskModal({ isOpen, onClose, projectId, members = [], onTaskCreat
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   
-  // ============================================================
-  // 2. Funciones auxiliares (sin hooks)
-  // ============================================================
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
     if (error) setError('')
   }
   
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
     
-    // Validaciones del frontend
     if (!formData.title.trim()) {
       setError('El título es obligatorio')
-      setLoading(false)
       return
     }
     
+    setLoading(true)
     try {
-      // Preparar los datos
       const taskData = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
         priority: formData.priority,
-        due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
-        assigned_to: formData.assigned_to ? parseInt(formData.assigned_to) : null
+        due_date: formData.due_date ? `${formData.due_date}T00:00:00` : null,
+        assigned_to: formData.assigned_to ? parseInt(formData.assigned_to, 10) : null
       }
       
       const newTask = await taskService.createTask(projectId, taskData)
       
-      // Notificar al componente padre
-      if (onTaskCreated) {
-        onTaskCreated(newTask)
-      }
+      if (onTaskCreated) onTaskCreated(newTask)
       
-      // Limpiar formulario y cerrar
-      setFormData({
-        title: '',
-        description: '',
-        priority: 'medium',
-        due_date: '',
-        assigned_to: ''
-      })
+      setFormData({ title: '', description: '', priority: 'medium', due_date: '', assigned_to: '' })
       onClose()
-    } catch (error) {
-      setError(error.message)
+    } catch (err) {
+      setError(err.message || 'Error al crear la tarea')
     } finally {
       setLoading(false)
     }
   }
   
   const handleClose = () => {
-    setFormData({
-      title: '',
-      description: '',
-      priority: 'medium',
-      due_date: '',
-      assigned_to: ''
-    })
+    setFormData({ title: '', description: '', priority: 'medium', due_date: '', assigned_to: '' })
     setError('')
     onClose()
   }
 
-  // ============================================================
-  // 3. La condición de retorno va AL FINAL, justo antes del JSX.
-  // Esto garantiza que si en el futuro agregas un useEffect, no rompa las reglas de React.
-  // ============================================================
   if (!isOpen) return null
   
-  // ============================================================
-  // 4. El JSX del modal
-  // ============================================================
   return (
     <div 
       onClick={handleClose}
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 999,
         display: 'flex',
@@ -126,7 +78,7 @@ function CreateTaskModal({ isOpen, onClose, projectId, members = [], onTaskCreat
       <div 
         onClick={(e) => e.stopPropagation()}
         style={{
-          backgroundColor: 'white',
+          backgroundColor: 'var(--bg-primary, white)',
           borderRadius: '8px',
           padding: '2rem',
           width: '100%',
@@ -136,46 +88,22 @@ function CreateTaskModal({ isOpen, onClose, projectId, members = [], onTaskCreat
           boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
         }}
       >
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '1.5rem'
-        }}>
-          <h2 style={{ margin: 0 }}>✨ Crear Nueva Tarea</h2>
-          <button
-            onClick={handleClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6c757d'
-            }}
-          >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h2 style={{ margin: 0, color: 'var(--text-primary, #212529)' }}>✨ Crear Nueva Tarea</h2>
+          <button onClick={handleClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-secondary, #6c757d)' }}>
             ×
           </button>
         </div>
         
         {error && (
-          <div style={{
-            padding: '1rem',
-            backgroundColor: '#f8d7da',
-            color: '#721c24',
-            borderRadius: '4px',
-            marginBottom: '1rem'
-          }}>
+          <div style={{ padding: '1rem', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '4px', marginBottom: '1rem' }}>
             ❌ {error}
           </div>
         )}
         
         <form onSubmit={handleSubmit}>
-          {/* Título */}
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-              Título *
-            </label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary, #212529)' }}>Título *</label>
             <input
               name="title"
               type="text"
@@ -184,23 +112,13 @@ function CreateTaskModal({ isOpen, onClose, projectId, members = [], onTaskCreat
               placeholder="Ej: Diseñar homepage"
               disabled={loading}
               maxLength={200}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #ced4da',
-                borderRadius: '4px',
-                fontSize: '1rem',
-                boxSizing: 'border-box'
-              }}
+              style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--border-color, #ced4da)', borderRadius: '4px', fontSize: '1rem', boxSizing: 'border-box', backgroundColor: 'var(--bg-primary, white)', color: 'var(--text-primary, #212529)' }}
               autoFocus
             />
           </div>
           
-          {/* Descripción */}
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-              Descripción (opcional)
-            </label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary, #212529)' }}>Descripción (opcional)</label>
             <textarea
               name="description"
               value={formData.description}
@@ -208,45 +126,19 @@ function CreateTaskModal({ isOpen, onClose, projectId, members = [], onTaskCreat
               placeholder="Describe los detalles de la tarea..."
               disabled={loading}
               rows={3}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #ced4da',
-                borderRadius: '4px',
-                fontSize: '1rem',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box'
-              }}
+              style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--border-color, #ced4da)', borderRadius: '4px', fontSize: '1rem', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', backgroundColor: 'var(--bg-primary, white)', color: 'var(--text-primary, #212529)' }}
             />
           </div>
           
-          {/* Prioridad y Fecha (en la misma fila) */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: '1fr 1fr', 
-            gap: '1rem',
-            marginBottom: '1rem'
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Prioridad
-              </label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary, #212529)' }}>Prioridad</label>
               <select
                 name="priority"
                 value={formData.priority}
                 onChange={handleChange}
                 disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #ced4da',
-                  borderRadius: '4px',
-                  fontSize: '1rem',
-                  backgroundColor: 'white',  // ← Asegurar fondo blanco
-                  color: '#212529',           // ← Texto oscuro
-                  appearance: 'auto'          // ← Usar estilo nativo del navegador
-                }}
+                style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--border-color, #ced4da)', borderRadius: '4px', fontSize: '1rem', backgroundColor: 'var(--bg-primary, white)', color: 'var(--text-primary, #212529)' }}
               >
                 <option value="low">🟢 Baja</option>
                 <option value="medium">🟡 Media</option>
@@ -255,48 +147,26 @@ function CreateTaskModal({ isOpen, onClose, projectId, members = [], onTaskCreat
             </div>
             
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Fecha límite (opcional)
-              </label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary, #212529)' }}>Fecha límite (opcional)</label>
               <input
                 name="due_date"
                 type="date"
                 value={formData.due_date}
                 onChange={handleChange}
                 disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #ced4da',
-                  borderRadius: '4px',
-                  fontSize: '1rem',
-                  boxSizing: 'border-box'
-                }}
+                style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--border-color, #ced4da)', borderRadius: '4px', fontSize: '1rem', boxSizing: 'border-box', backgroundColor: 'var(--bg-primary, white)', color: 'var(--text-primary, #212529)' }}
               />
             </div>
           </div>
           
-          {/* Asignado a */}
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-              Asignar a (opcional)
-            </label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary, #212529)' }}>Asignar a (opcional)</label>
             <select
               name="assigned_to"
               value={formData.assigned_to}
               onChange={handleChange}
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #ced4da',
-                borderRadius: '4px',
-                fontSize: '1rem',
-                backgroundColor: 'white',  // ← Asegurar fondo blanco
-                color: '#212529',           // ← Texto oscuro
-                appearance: 'auto'          // ← Usar estilo nativo del navegador
-              }}
-
+              style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--border-color, #ced4da)', borderRadius: '4px', fontSize: '1rem', backgroundColor: 'var(--bg-primary, white)', color: 'var(--text-primary, #212529)' }}
             >
               <option value="">Sin asignar</option>
               {members.map(member => (
@@ -307,37 +177,19 @@ function CreateTaskModal({ isOpen, onClose, projectId, members = [], onTaskCreat
             </select>
           </div>
           
-          {/* Botones */}
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
             <button
               type="button"
               onClick={handleClose}
               disabled={loading}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: 'white',
-                color: '#6c757d',
-                border: '1px solid #ced4da',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '1rem'
-              }}
+              style={{ padding: '0.75rem 1.5rem', backgroundColor: 'var(--bg-primary, white)', color: 'var(--text-secondary, #6c757d)', border: '1px solid var(--border-color, #ced4da)', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem' }}
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: loading ? '#6c757d' : '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '1rem',
-                fontWeight: '500'
-              }}
+              style={{ padding: '0.75rem 1.5rem', backgroundColor: loading ? 'var(--text-secondary, #6c757d)' : 'var(--primary-color, #007bff)', color: 'white', border: 'none', borderRadius: '4px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '1rem', fontWeight: '500' }}
             >
               {loading ? 'Creando...' : '✨ Crear Tarea'}
             </button>

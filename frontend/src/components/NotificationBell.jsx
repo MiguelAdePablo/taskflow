@@ -2,21 +2,30 @@ import { useState, useRef, useEffect } from 'react'
 import { useSocket } from '../hooks/useSocket'
 import { useNavigate } from 'react-router-dom'
 
-/**
- * ============================================================
- * COMPONENTE: NotificationBell
- * ============================================================
- * 
- * Muestra la campana de notificaciones con el contador de no leídas
- * y un desplegable con el historial de eventos en tiempo real.
- */
+// ============================================================
+// PROPÓSITO: Formatear la diferencia de tiempo de una marca temporal.
+// CRÍTICO: Se extrae fuera del componente para evitar su recreación en cada renderizado, mejorando el rendimiento.
+// ============================================================
+const formatTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const diffMins = Math.floor((Date.now() - date.getTime()) / 60000)
+  
+  if (diffMins < 1) return 'Ahora mismo'
+  if (diffMins < 60) return `Hace ${diffMins} min`
+  return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+}
+
+// ============================================================
+// PROPÓSITO: Mostrar campana de notificaciones con contador y desplegable de eventos en tiempo real.
+// CRÍTICO: Se corrige el anti-patrón de usar `indexOf` para identificar notificaciones. Se pasa el `id` único a las funciones del contexto para evitar errores de eliminación/lectura si el array muta o tiene objetos duplicados.
+// ============================================================
 function NotificationBell() {
   const { notifications, unreadCount, markAllAsRead, markAsRead, removeNotification } = useSocket()
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
 
-  // Cerrar el desplegable si se hace clic fuera de él
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -28,10 +37,9 @@ function NotificationBell() {
   }, [])
 
   const handleNotificationClick = (notification) => {
-    markAsRead(notifications.indexOf(notification))
+    if (notification.id) markAsRead(notification.id)
     setIsOpen(false)
     
-    // Navegar según el tipo de notificación
     if (notification.taskId) {
       navigate(`/tasks/${notification.taskId}`)
     } else if (notification.projectId) {
@@ -39,21 +47,8 @@ function NotificationBell() {
     }
   }
 
-  const formatTime = (timestamp) => {
-    if (!timestamp) return ''
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffMs = now - date
-    const diffMins = Math.floor(diffMs / 60000)
-    
-    if (diffMins < 1) return 'Ahora mismo'
-    if (diffMins < 60) return `Hace ${diffMins} min`
-    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-  }
-
   return (
     <div className="relative" ref={dropdownRef} style={{ position: 'relative' }}>
-      {/* Botón de la campana */}
       <button
         onClick={() => {
           setIsOpen(!isOpen)
@@ -69,11 +64,10 @@ function NotificationBell() {
           transition: 'background 0.2s',
           fontSize: '1.5rem'
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg, #f3f4f6)'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
       >
         🔔
-        {/* Badge de no leídas */}
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute',
@@ -96,7 +90,6 @@ function NotificationBell() {
         )}
       </button>
 
-      {/* Desplegable de notificaciones */}
       {isOpen && (
         <div style={{
           position: 'absolute',
@@ -104,23 +97,22 @@ function NotificationBell() {
           top: '100%',
           marginTop: '0.5rem',
           width: '320px',
-          backgroundColor: 'white',
+          backgroundColor: 'var(--bg-primary, white)',
           borderRadius: '8px',
           boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-          border: '1px solid #e5e7eb',
+          border: '1px solid var(--border-color, #e5e7eb)',
           zIndex: 50,
           overflow: 'hidden'
         }}>
-          {/* Header del desplegable */}
           <div style={{
             padding: '0.75rem 1rem',
-            borderBottom: '1px solid #e5e7eb',
+            borderBottom: '1px solid var(--border-color, #e5e7eb)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            backgroundColor: '#f9fafb'
+            backgroundColor: 'var(--bg-secondary, #f9fafb)'
           }}>
-            <span style={{ fontWeight: '600', fontSize: '0.9rem', color: '#111827' }}>
+            <span style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-primary, #111827)' }}>
               Notificaciones
             </span>
             {notifications.length > 0 && (
@@ -133,21 +125,20 @@ function NotificationBell() {
             )}
           </div>
 
-          {/* Lista de notificaciones */}
           <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
             {notifications.length === 0 ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280', fontSize: '0.9rem' }}>
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary, #6b7280)', fontSize: '0.9rem' }}>
                 No tienes notificaciones nuevas
               </div>
             ) : (
-              notifications.map((notif, index) => (
+              notifications.map((notif) => (
                 <div
-                  key={index}
+                  key={notif.id || notif.timestamp}
                   onClick={() => handleNotificationClick(notif)}
                   style={{
                     padding: '0.75rem 1rem',
-                    borderBottom: '1px solid #f3f4f6',
-                    backgroundColor: notif.read ? 'white' : '#eff6ff',
+                    borderBottom: '1px solid var(--border-color, #f3f4f6)',
+                    backgroundColor: notif.read ? 'var(--bg-primary, white)' : 'var(--bg-unread, #eff6ff)',
                     cursor: 'pointer',
                     transition: 'background 0.2s',
                     display: 'flex',
@@ -155,30 +146,30 @@ function NotificationBell() {
                     alignItems: 'flex-start',
                     gap: '0.75rem'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = notif.read ? '#f9fafb' : '#dbeafe'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = notif.read ? 'white' : '#eff6ff'}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = notif.read ? 'var(--bg-secondary, #f9fafb)' : 'var(--bg-unread-hover, #dbeafe)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = notif.read ? 'var(--bg-primary, white)' : 'var(--bg-unread, #eff6ff)'}
                 >
                   <div style={{ flex: 1 }}>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#111827', lineHeight: '1.4' }}>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-primary, #111827)', lineHeight: '1.4' }}>
                       {notif.message}
                     </p>
-                    <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem', display: 'block' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #6b7280)', marginTop: '0.25rem', display: 'block' }}>
                       {formatTime(notif.timestamp)}
                     </span>
                   </div>
-                  {/* Botón de eliminar individual */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      removeNotification(index)
+                      if (notif.id) removeNotification(notif.id)
                     }}
                     style={{
                       background: 'none',
                       border: 'none',
                       color: '#9ca3af',
                       cursor: 'pointer',
-                      fontSize: '1rem',
-                      padding: '0.25rem'
+                      fontSize: '1.2rem',
+                      padding: '0.25rem',
+                      lineHeight: '1'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
                     onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}

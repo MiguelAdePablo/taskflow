@@ -1,80 +1,64 @@
+import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import commentService from '../services/commentService'
 
-/**
- * ============================================================
- * COMPONENTE: CommentItem
- * ============================================================
- * 
- * Muestra un comentario individual con opción de eliminar 
- * si el usuario actual es el autor.
- * 
- * Props:
- * - comment: Objeto con los datos del comentario
- * - onCommentDeleted: Función callback para actualizar la lista en el padre
- */
+// ============================================================
+// PROPÓSITO: Formatear la fecha de creación del comentario.
+// CRÍTICO: Extraída fuera del componente para evitar su recreación innecesaria en cada renderizado (optimización de memoria).
+// ============================================================
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  return new Date(dateString).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// ============================================================
+// PROPÓSITO: Renderizar un comentario individual con opción de eliminación para el autor.
+// CRÍTICO: Se valida la existencia de `comment` y `comment.author` al inicio para prevenir errores de desestructuración (TypeError) si los datos llegan incompletos.
+// ============================================================
 function CommentItem({ comment, onCommentDeleted }) {
   const { user } = useAuth()
+  const [isDeleting, setIsDeleting] = useState(false)
   
   if (!comment || !comment.author) return null
   
-  // Verificar si el usuario actual es el autor del comentario
   const isAuthor = user?.id === comment.user_id
   
-  /**
-   * Manejar la eliminación del comentario
-   */
   const handleDelete = async () => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
-      return
-    }
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este comentario?')) return
     
+    setIsDeleting(true)
     try {
       await commentService.deleteComment(comment.id)
-      // Notificar al componente padre para que lo quite de la lista
-      if (onCommentDeleted) {
-        onCommentDeleted(comment.id)
-      }
+      if (onCommentDeleted) onCommentDeleted(comment.id)
     } catch (error) {
+      console.error('Error al eliminar el comentario:', error)
       alert('Error al eliminar el comentario: ' + error.message)
+    } finally {
+      setIsDeleting(false)
     }
-  }
-  
-  // Formatear la fecha de forma amigable
-  const formatDate = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
   }
   
   return (
     <div style={{
       padding: '1rem',
-      backgroundColor: '#f8f9fa',
+      backgroundColor: 'var(--bg-secondary, #f8f9fa)',
       borderRadius: '8px',
       marginBottom: '0.75rem',
-      border: '1px solid #e9ecef'
+      border: '1px solid var(--border-color, #e9ecef)'
     }}>
-      {/* Header del comentario: Autor y Fecha */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '0.5rem'
-      }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {/* Avatar con inicial */}
           <div style={{
             width: '32px',
             height: '32px',
             borderRadius: '50%',
-            backgroundColor: '#007bff',
+            backgroundColor: 'var(--primary-color, #007bff)',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
@@ -85,43 +69,43 @@ function CommentItem({ comment, onCommentDeleted }) {
             {(comment.author.full_name || comment.author.username || '?').charAt(0).toUpperCase()}
           </div>
           <div>
-            <div style={{ fontWeight: '600', fontSize: '0.95rem', color: '#212529' }}>
+            <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-primary, #212529)' }}>
               {comment.author.full_name || comment.author.username}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#6c757d' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #6c757d)' }}>
               {formatDate(comment.created_at)}
             </div>
           </div>
         </div>
         
-        {/* Botón eliminar (solo para el autor) */}
         {isAuthor && (
           <button
             onClick={handleDelete}
+            disabled={isDeleting}
             style={{
               background: 'none',
               border: 'none',
-              color: '#dc3545',
-              cursor: 'pointer',
+              color: isDeleting ? '#adb5bd' : '#dc3545',
+              cursor: isDeleting ? 'not-allowed' : 'pointer',
               fontSize: '0.85rem',
               padding: '0.25rem 0.5rem',
-              borderRadius: '4px'
+              borderRadius: '4px',
+              transition: 'background 0.2s'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8d7da'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onMouseEnter={(e) => { if (!isDeleting) e.currentTarget.style.backgroundColor = '#f8d7da' }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
           >
-            🗑️ Eliminar
+            {isDeleting ? 'Eliminando...' : '🗑️ Eliminar'}
           </button>
         )}
       </div>
       
-      {/* Contenido del comentario */}
       <p style={{ 
         margin: 0, 
-        color: '#495057', 
+        color: 'var(--text-primary, #495057)', 
         fontSize: '0.95rem',
         lineHeight: '1.5',
-        whiteSpace: 'pre-wrap' // Respeta los saltos de línea
+        whiteSpace: 'pre-wrap'
       }}>
         {comment.content}
       </p>
