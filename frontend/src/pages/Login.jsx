@@ -1,68 +1,62 @@
-import { useState, useEffect } from 'react'  // ← AÑADIDO: useEffect
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
-/**
- * Página de inicio de sesión.
- * 
- * Usa el AuthContext para hacer login y redirigir al dashboard.
- */
+// ============================================================
+// PROPÓSITO: Página de inicio de sesión para autenticar usuarios.
+// CRÍTICO: Se ha eliminado el bloque de "credenciales de prueba" hardcodeadas. Exponer credenciales en el código fuente o en la UI de producción es una vulnerabilidad de seguridad crítica (CWE-259).
+// ============================================================
 function Login() {
-  // Estados del formulario
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   
-  // Obtener funciones del contexto
   const { login, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   
-  // Si ya está autenticado, redirigir al dashboard
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard', { replace: true })
     }
   }, [isAuthenticated, navigate])
   
-  /**
-   * Manejador del submit del formulario
-   */
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     
-    // Validaciones básicas
     if (!email || !password) {
       setError('Email y contraseña son obligatorios')
       setLoading(false)
       return
     }
     
-    // Llamar a la función login del contexto
-    const result = await login(email, password)
-    
-    if (result.success) {
-      // Login exitoso, redirigir al dashboard
-      navigate('/dashboard', { replace: true })
-    } else {
-      // Login fallido, mostrar error
-      setError(result.error)
+    try {
+      const result = await login(email, password)
+      if (result.success) {
+        navigate('/dashboard', { replace: true })
+      } else {
+        setError(result.error || 'Credenciales inválidas')
+      }
+    } catch (err) {
+      setError('Error de conexión con el servidor')
+    } finally {
+      setLoading(false)
     }
-    
-    setLoading(false)
   }
   
   return (
     <div style={{ 
       maxWidth: '400px', 
-      margin: '2rem auto', 
+      margin: '4rem auto', 
       padding: '2rem',
-      border: '1px solid #ddd',
-      borderRadius: '8px'
+      border: '1px solid var(--border-color, #ddd)',
+      borderRadius: '8px',
+      backgroundColor: 'var(--bg-primary, #ffffff)',
+      boxShadow: 'var(--shadow, 0 4px 6px rgba(0,0,0,0.1))'
     }}>
-      <h1 style={{ textAlign: 'center' }}>🔐 Iniciar Sesión</h1>
+      <h1 style={{ textAlign: 'center', color: 'var(--text-primary, #212529)', marginBottom: '1.5rem' }}>🔐 Iniciar Sesión</h1>
       
       {error && (
         <div style={{ 
@@ -70,7 +64,8 @@ function Login() {
           backgroundColor: '#f8d7da', 
           color: '#721c24',
           borderRadius: '4px',
-          marginBottom: '1rem'
+          marginBottom: '1rem',
+          border: '1px solid #f5c6cb'
         }}>
           ❌ {error}
         </div>
@@ -78,7 +73,7 @@ function Login() {
       
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: '0.5rem' }}>
+          <label htmlFor="email" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary, #212529)' }}>
             Email:
           </label>
           <input
@@ -90,15 +85,19 @@ function Login() {
             disabled={loading}
             style={{ 
               width: '100%', 
-              padding: '0.5rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
+              padding: '0.75rem',
+              border: '1px solid var(--input-border, #ced4da)',
+              borderRadius: '4px',
+              fontSize: '1rem',
+              boxSizing: 'border-box',
+              backgroundColor: 'var(--input-bg, #ffffff)',
+              color: 'var(--text-primary, #212529)'
             }}
           />
         </div>
         
-        <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="password" style={{ display: 'block', marginBottom: '0.5rem' }}>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label htmlFor="password" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: 'var(--text-primary, #212529)' }}>
             Contraseña:
           </label>
           <input
@@ -110,9 +109,13 @@ function Login() {
             disabled={loading}
             style={{ 
               width: '100%', 
-              padding: '0.5rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
+              padding: '0.75rem',
+              border: '1px solid var(--input-border, #ced4da)',
+              borderRadius: '4px',
+              fontSize: '1rem',
+              boxSizing: 'border-box',
+              backgroundColor: 'var(--input-bg, #ffffff)',
+              color: 'var(--text-primary, #212529)'
             }}
           />
         </div>
@@ -123,34 +126,23 @@ function Login() {
           style={{ 
             width: '100%',
             padding: '0.75rem',
-            backgroundColor: loading ? '#6c757d' : '#007bff',
+            backgroundColor: loading ? 'var(--text-muted, #6c757d)' : 'var(--accent-blue, #007bff)',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
             cursor: loading ? 'not-allowed' : 'pointer',
-            fontSize: '1rem'
+            fontSize: '1rem',
+            fontWeight: '500',
+            transition: 'background-color 0.2s'
           }}
         >
           {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
         </button>
       </form>
       
-      <p style={{ textAlign: 'center', marginTop: '1rem' }}>
-        ¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link>
+      <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-secondary, #6c757d)' }}>
+        ¿No tienes cuenta? <Link to="/register" style={{ color: 'var(--accent-blue, #007bff)', textDecoration: 'none', fontWeight: '500' }}>Regístrate aquí</Link>
       </p>
-      
-      <div style={{ 
-        marginTop: '1rem', 
-        padding: '1rem', 
-        backgroundColor: '#e7f3ff',
-        borderRadius: '4px',
-        fontSize: '0.9rem'
-      }}>
-        <strong>💡 Para probar:</strong><br />
-        Usa las credenciales que creaste con Thunder Client:<br />
-        Email: <code>miguel@example.com</code><br />
-        Contraseña: <code>miPassword123</code>
-      </div>
     </div>
   )
 }
