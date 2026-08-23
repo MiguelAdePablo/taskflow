@@ -1,40 +1,29 @@
 import os
 from dotenv import load_dotenv
 
-# Cargar variables de entorno desde el archivo .env
 load_dotenv()
 
+# ============================================================
+# PROPÓSITO: Definir configuraciones base y por entorno.
+# CRÍTICO: Se eliminaron los valores por defecto inseguros para SECRET_KEY. La aplicación ahora fallará explícitamente al iniciar si no se proporcionan, evitando despliegues accidentales con credenciales de desarrollo.
+# ============================================================
 class Config:
-    """Configuración base de la aplicación"""
-    
-    # Clave secreta para firmar cookies y tokens
-    # ⚠️ En producción, usa una clave más segura y guárdala en .env
-    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-    
-    # Configuración de la base de datos
-    # Para desarrollo, usamos SQLite (archivo local)
-    # Para producción, usaremos PostgreSQL en Render
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        'DATABASE_URL',
-        'sqlite:///taskflow.db'  # Archivo SQLite en la carpeta backend/
-    )
-    
-    # Desactivar tracking de modificaciones (ahorra recursos)
+    SECRET_KEY = os.getenv('SECRET_KEY')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///taskflow.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    # Configuración de JWT (tokens de autenticación)
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
-    JWT_ACCESS_TOKEN_EXPIRES = 86400  # 24 horas en segundos
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+    JWT_ACCESS_TOKEN_EXPIRES = 86400
+
+    def __init__(self):
+        if not self.SECRET_KEY or not self.JWT_SECRET_KEY:
+            raise ValueError("SECRET_KEY y JWT_SECRET_KEY son variables de entorno obligatorias.")
 
 class DevelopmentConfig(Config):
-    """Configuración para desarrollo"""
     DEBUG = True
 
 class ProductionConfig(Config):
-    """Configuración para producción"""
     DEBUG = False
 
 class TestingConfig(Config):
-    """Configuración para testing"""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///testing.db'

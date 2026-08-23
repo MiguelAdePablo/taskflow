@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -7,64 +7,45 @@ from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
 from .config import Config
 
-# Inicializar extensiones (se conectan con la app más abajo)
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 socketio = SocketIO()
 
+# ============================================================
+# PROPÓSITO: Función fábrica para inicializar la aplicación Flask.
+# CRÍTICO: Se unificó la configuración de CORS y SocketIO para evitar la sobrescritura accidental que dejaba el origen como "*" (vulnerabilidad de origen cruzado).
+# ============================================================
 def create_app(config_class=Config):
-    """
-    Función fábrica que crea y configura la aplicación Flask.
-    Esto es una buena práctica porque permite tener diferentes
-    configuraciones para desarrollo, producción y testing.
-    """
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-        
-    # ... inicialización de db, migrate, jwt ...
-    
-    # ✅ CORS DINÁMICO: Permite localhost en desarrollo y tu dominio en producción
-    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-    CORS(app, resources={r"/api/*": {"origins": [frontend_url, "http://localhost:5173"]}})
-    
-    # ✅ SOCKET.IO DINÁMICO
-    socketio.init_app(app, cors_allowed_origins=[frontend_url, "http://localhost:5173"])
-    
-    # ... resto de tu código (blueprints, health check, socket_handlers) ...
-    
-    # Inicializar extensiones con la app
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+    allowed_origins = [frontend_url, "http://localhost:5173"]
     
-    # Configurar CORS para permitir peticiones desde React
-    # En desarrollo, permitimos el puerto 5173 de Vite
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
-    
-    # Inicializar SocketIO con CORS
-    socketio.init_app(app, cors_allowed_origins="http://localhost:5173")
-    
-    # Registrar los blueprints (rutas de la API)
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
+    socketio.init_app(app, cors_allowed_origins=allowed_origins)
+
     from .routes.auth import auth_bp
     from .routes.projects import projects_bp
     from .routes.tasks import tasks_bp
     from .routes.users import users_bp
     from .routes.comments import comments_bp
-    
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(projects_bp, url_prefix='/api/projects')
     app.register_blueprint(tasks_bp, url_prefix='/api')
     app.register_blueprint(users_bp, url_prefix='/api/users')
     app.register_blueprint(comments_bp, url_prefix='/api')
-    
-    # Ruta de prueba para verificar que el servidor funciona
+
     @app.route('/api/health')
     def health_check():
-        return {'status': 'ok', 'message': 'TaskFlow API is running!'}
-    
-    # Importar los handlers de WebSocket (DEBE IR AQUÍ, después de registrar blueprints)
-    from . import socket_handlers  
-    
+        return jsonify({'status': 'ok', 'message': 'TaskFlow API is running!'})
+
+    from . import socket_handlers
+
     return app
