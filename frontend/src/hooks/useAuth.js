@@ -1,14 +1,15 @@
 import { useContext } from 'react'
 import { AuthContext } from '../context/AuthContext'
 
-/**
- * Custom hook para acceder al contexto de autenticación.
- */
+// ============================================================
+// PROPÓSITO: Exponer el estado y métodos de autenticación del AuthContext.
+// CRÍTICO: Se valida explícitamente que el hook se consuma dentro de un AuthProvider. Esto previene errores silenciosos (undefined) y lanza un fallo temprano y descriptivo durante el desarrollo si la jerarquía de componentes está mal configurada.
+// ============================================================
 export function useAuth() {
   const context = useContext(AuthContext)
   
-  if (context === null) {
-    throw new Error('useAuth debe usarse dentro de un AuthProvider')
+  if (!context) {
+    throw new Error('useAuth debe ser utilizado dentro de un AuthProvider')
   }
   
   return context
