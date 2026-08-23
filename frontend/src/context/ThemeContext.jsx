@@ -2,21 +2,20 @@ import { createContext, useState, useEffect } from 'react'
 
 export const ThemeContext = createContext(null)
 
+// ============================================================
+// PROPÓSITO: Proveedor de contexto para gestionar el tema claro/oscuro de la aplicación.
+// CRÍTICO: Se inicializa el estado directamente con una función lazy para evitar lecturas innecesarias de localStorage en cada renderizado inicial.
+// ============================================================
 export function ThemeProvider({ children }) {
-  // Cargar tema guardado o usar 'light' por defecto
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('theme')
-    return saved || 'light'
-  })
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
 
-  // Aplicar el tema al atributo data-theme del HTML
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }, [theme])
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light')
+    setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'))
   }
 
   const value = {

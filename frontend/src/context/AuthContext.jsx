@@ -1,16 +1,17 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
 import authService from '../services/authService'
-import { useContext } from 'react'
 
 export const AuthContext = createContext(null)
 
+// ============================================================
+// PROPÓSITO: Gestionar el estado de autenticación global, token y datos del usuario.
+// CRÍTICO: `isAuthenticated` se deriva estrictamente de la existencia del `token`, no del objeto `user`, para evitar estados inconsistentes durante la carga de datos. Se manejan los errores de red (500/Network) sin expulsar al usuario, reservando el logout solo para 401 (No autorizado).
+// ============================================================
 export function AuthProvider({ children }) {
-  // ✅ CORRECCIÓN 1: Inicializar el token directamente desde localStorage
   const [token, setToken] = useState(localStorage.getItem('token'))
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   
-  // ✅ CORRECCIÓN 2: isAuthenticated depende del token, no de user
   const isAuthenticated = !!token
 
   useEffect(() => {
@@ -23,21 +24,16 @@ export function AuthProvider({ children }) {
       }
       
       try {
-        // Intentamos obtener los datos del usuario
         const data = await authService.getCurrentUser()
         setUser(data.user)
       } catch (error) {
         console.error('Error verificando token:', error)
         
-        // ✅ CORRECCIÓN 3: SOLO borramos todo si el servidor dice explícitamente "401 No autorizado"
         if (error.response?.status === 401) {
           localStorage.removeItem('token')
           setToken(null)
           setUser(null)
         } else {
-          // Si es un error de red (Network Error) o 500, NO hacemos nada.
-          // El token sigue en el estado y en localStorage, por lo que 
-          // isAuthenticated sigue siendo true y el usuario no es expulsado.
           console.warn('Backend no disponible, manteniendo sesión localmente.')
         }
       } finally {
