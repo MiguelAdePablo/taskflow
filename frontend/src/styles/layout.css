@@ -1,4 +1,19 @@
 /* ============================================================
+   RESET GLOBAL Y BOX-SIZING
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ============================================================
    VARIABLES CSS PARA TEMAS (CLARO/OSCURO)
    ============================================================ */
 
@@ -48,16 +63,16 @@
    SISTEMA DE LAYOUT RESPONSIVO
    ============================================================ */
 
-.container {
+.container,
+.container-narrow {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem;
+  width: 100%;
 }
 
 .container-narrow {
   max-width: 1000px;
-  margin: 0 auto;
-  padding: 0 1rem;
 }
 
 .grid-2-cols {
@@ -95,8 +110,37 @@
 }
 
 /* ============================================================
+   CORRECCIÓN DE ALINEACIÓN HEADER/BODY
+   ============================================================ */
+
+/* Asegurar que todos los headers usen el mismo contenedor */
+header > div,
+header .container,
+header .container-aligned {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  width: 100% !important;
+}
+
+/* Asegurar que el main content tenga el mismo padding */
+main > div,
+main .container,
+main .container-narrow {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* Eliminar overflow horizontal */
+body {
+  overflow-x: hidden;
+}
+
+/* ============================================================
    MEDIA QUERIES
    ============================================================ */
+
 @media (max-width: 768px) {
   .grid-2-cols {
     grid-template-columns: 1fr;
@@ -119,10 +163,28 @@
   .hide-mobile {
     display: none !important;
   }
+  
+  /* Ajustar padding en móviles */
+  .container,
+  .container-narrow,
+  header > div,
+  main > div {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
 }
 
 @media (max-width: 480px) {
   .filters-row {
     grid-template-columns: 1fr;
+  }
+  
+  /* Padding aún más reducido en móviles muy pequeños */
+  .container,
+  .container-narrow,
+  header > div,
+  main > div {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
   }
 }

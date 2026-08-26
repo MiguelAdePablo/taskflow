@@ -14,7 +14,7 @@ function ThemeToggle() {
       style={{
         padding: '0.35rem',
         backgroundColor: 'transparent',
-        border: '1px solid var(--border-color, transparent)',
+        border: '0px solid var(--border-color, transparent)',
         cursor: 'pointer',
         fontSize: '1.5rem',
         borderRadius: '4px',
