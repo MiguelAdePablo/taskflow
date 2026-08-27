@@ -4,7 +4,12 @@ import axios from 'axios'
 // PROPÓSITO: Configurar la instancia central de Axios para todas las peticiones HTTP.
 // CRÍTICO: Se mantiene la redirección hard (window.location.href) en errores 401 para garantizar un "hard reset" del estado de la aplicación. Esto previene que datos protegidos queden residuales en la memoria de React tras la expiración del token, tal como estaba diseñado originalmente.
 // ============================================================
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+
+// ✅ CAMBIO REALIZADO: Si existe la variable de entorno (Producción), le añadimos '/api'. 
+// Si no existe (Desarrollo local), usamos el fallback que ya incluye '/api'.
+const API_BASE_URL = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api` 
+  : 'http://localhost:5000/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -42,7 +47,7 @@ api.interceptors.response.use(
     }
     
     if (status >= 500) {
-      console.error('❌ Error del servidor:', error.response?.data)
+      console.error(' Error del servidor:', error.response?.data)
     }
     
     return Promise.reject(error)
