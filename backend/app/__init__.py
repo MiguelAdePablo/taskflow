@@ -48,4 +48,15 @@ def create_app(config_class=Config):
 
     from . import socket_handlers
 
+        # Importar los handlers de WebSocket
+    from . import socket_handlers  
+
+    # ✅ NUEVO: Verificar y crear tablas en la base de datos al iniciar
+    with app.app_context():
+        try:
+            db.create_all()
+            print("✅ Base de datos conectada. Tablas verificadas/creadas correctamente.")
+        except Exception as e:
+            print(f"⚠️ Error al inicializar la base de datos: {e}")
+
     return app
