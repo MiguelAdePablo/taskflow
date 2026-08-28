@@ -25,9 +25,9 @@ def create_app(config_class=Config):
     jwt.init_app(app)
 
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-    allowed_origins = [frontend_url, "http://localhost:5173"]
+    allowed_origins = [frontend_url, "http://localhost:5173",  "https://taskflow-frontend-six-zeta.vercel.app"]
     
-    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}}, supports_credentials=True)
     socketio.init_app(app, cors_allowed_origins=allowed_origins)
 
     from .routes.auth import auth_bp
