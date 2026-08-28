@@ -27,8 +27,17 @@ def create_app(config_class=Config):
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
     allowed_origins = [frontend_url, "http://localhost:5173",  "https://taskflow-frontend-six-zeta.vercel.app"]
     
-    CORS(app, resources={r"/api/*": {"origins": allowed_origins}}, supports_credentials=True)
+    CORS(app, 
+        origins=allowed_origins,
+        supports_credentials=True,
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"]
+        )
     socketio.init_app(app, cors_allowed_origins=allowed_origins)
+
+       # ✅ LOG para debug
+    print(f"🔒 CORS configurado para: {allowed_origins}")
+    print(f"🔒 FRONTEND_URL desde env: {frontend_url}")
 
     from .routes.auth import auth_bp
     from .routes.projects import projects_bp
