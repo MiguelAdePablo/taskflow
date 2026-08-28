@@ -56,7 +56,7 @@ function Login() {
       backgroundColor: 'var(--bg-primary, #ffffff)',
       boxShadow: 'var(--shadow, 0 4px 6px rgba(0,0,0,0.1))'
     }}>
-      <h1 style={{ textAlign: 'center', color: 'var(--text-primary, #212529)', marginBottom: '1.5rem' }}>🔐 Iniciar Sesión</h1>
+      <h1 style={{ textAlign: 'center', color: 'var(--text-primary, #212529)', marginBottom: '1.5rem' }}>L☺gin </h1>
       
       {error && (
         <div style={{ 
