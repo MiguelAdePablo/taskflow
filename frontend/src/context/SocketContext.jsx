@@ -30,7 +30,7 @@ export function SocketProvider({ children }) {
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
-        timeout: 30000
+        timeout: 60000
       })
       
       socketRef.current = newSocket
