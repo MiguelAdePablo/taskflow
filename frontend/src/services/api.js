@@ -7,12 +7,10 @@ import axios from 'axios'
 
 // ✅ CAMBIO REALIZADO: Si existe la variable de entorno (Producción), le añadimos '/api'. 
 // Si no existe (Desarrollo local), usamos el fallback que ya incluye '/api'.
-// const API_BASE_URL = import.meta.env.VITE_API_URL 
-//   ? `${import.meta.env.VITE_API_URL}/api` 
-//   : 'http://localhost:5000/api'
 const API_BASE_URL = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL}` 
+  ? `${import.meta.env.VITE_API_URL}/api` 
   : 'http://localhost:5000/api'
+
 
 
 const api = axios.create({
