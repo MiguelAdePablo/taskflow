@@ -29,7 +29,8 @@ export function SocketProvider({ children }) {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 10,
-        reconnectionDelay: 1000
+        reconnectionDelay: 1000,
+        timeout: 30000
       })
       
       socketRef.current = newSocket
