@@ -4,9 +4,20 @@ from app import create_app, socketio
 app = create_app()
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    # debug=False es más seguro para producción
+    port = int(os.environ.get('PORT', 8000))
     socketio.run(app, debug=False, host='0.0.0.0', port=port)
+
+
+
+# import os
+# from app import create_app, socketio
+
+# app = create_app()
+
+# if __name__ == '__main__':
+#     port = int(os.environ.get('PORT', 5000))
+#     # debug=False es más seguro para producción
+#     socketio.run(app, debug=False, host='0.0.0.0', port=port)
 
 
 # from app import create_app, socketio
