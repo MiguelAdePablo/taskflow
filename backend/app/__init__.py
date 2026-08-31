@@ -34,9 +34,9 @@ def create_app(config_class=Config):
         allow_headers=["Content-Type", "Authorization"]
         )
     # socketio.init_app(app, cors_allowed_origins=allowed_origins)
-    socketio.init_app(app, cors_allowed_origins=allowed_origins, async_mode='eventlet')
+    socketio.init_app(app, cors_allowed_origins=allowed_origins, async_mode='threading')
 
-       # ✅ LOG para debug
+    # ✅ LOG para debug
     print(f"🔒 CORS configurado para: {allowed_origins}")
     print(f"🔒 FRONTEND_URL desde env: {frontend_url}")
 
