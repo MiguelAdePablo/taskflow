@@ -4,7 +4,8 @@ import { useAuth } from '../hooks/useAuth'
 
 export const SocketContext = createContext(null)
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000'
+// const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000'
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 // ============================================================
 // PROPÓSITO: Gestionar la conexión WebSocket global, eventos en tiempo real y notificaciones.
