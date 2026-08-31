@@ -64,6 +64,11 @@ export function SocketProvider({ children }) {
       newSocket.on('connection_success', (data) => {
         console.log('👋 Bienvenido, usuario ID:', data.user_id)
       })
+
+      // 🕵️‍♂️ DEBUG: Escuchar TODOS los eventos que lleguen del servidor
+      newSocket.onAny((event, ...args) => {
+        console.log(`📡 Evento WebSocket recibido: ${event}`, args)
+      })
       
       newSocket.on('task:created', (data) => {
         handleNewNotification({
