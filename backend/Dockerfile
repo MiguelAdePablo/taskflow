@@ -19,4 +19,4 @@ COPY . .
 EXPOSE 8000
 
 # Comando de inicio con Gunicorn estándar (sin workers especiales)
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:8000", "run:app"]
+CMD ["gunicorn", "-k", "eventlet", "-w", "1", "-b", "0.0.0.0:8000", "run:app"]
