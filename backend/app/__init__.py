@@ -34,7 +34,7 @@ def create_app(config_class=Config):
         allow_headers=["Content-Type", "Authorization"]
         )
     # socketio.init_app(app, cors_allowed_origins=allowed_origins)
-    socketio.init_app(app, cors_allowed_origins="*")
+    socketio.init_app(app, cors_allowed_origins=allowed_origins, async_mode='eventlet')
 
        # ✅ LOG para debug
     print(f"🔒 CORS configurado para: {allowed_origins}")
